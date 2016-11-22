@@ -1,0 +1,34 @@
+{
+  "name": "easycanvas_2d",
+  "version": "1.0.0",
+  "description": "easycanvas 2d framework",
+  "main": "easycanvas.2d.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sjli/easycanvas.2d.git"
+  },
+  "keywords": [
+    "canvas"
+  ],
+  "author": "james.li0122@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sjli/easycanvas.2d/issues"
+  },
+  "homepage": "https://github.com/sjli/easycanvas.2d#readme",
+  "dependencies": {
+    "babel-core": "^6.18.0",
+    "babel-loader": "^6.2.7",
+    "babel-preset-es2015": "^6.18.0",
+    "gulp": "^3.9.1",
+    "gulp-plumber": "^1.1.0",
+    "webpack": "^1.13.3",
+    "webpack-stream": "^3.2.0"
+  }
+}

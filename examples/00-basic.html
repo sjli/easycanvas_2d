@@ -1,0 +1,88 @@
+<!Doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Example</title>
+        <style type="text/css">
+          html,
+          body, 
+          .app {
+            width: 100%;
+            height: 100%;
+          }
+        </style>
+    </head>
+    <body>
+      <div id="app" class="app"></div>
+      <script src="../dist/easycanvas.2d.js"></script>
+      <script type="text/javascript">
+        var urls = [
+          'images/pattern1.jpeg'
+        ];
+
+        EC.init('#app', urls).then(function() {
+
+          //初始化场景
+          var scene = EC.addScene();
+          var foreCTX = scene.foreLayer.context;
+          var backCTX = scene.backLayer.context;
+
+          scene.foreLayer.setCoordCenter(200, 300);
+          scene.foreLayer.config.showAxis = true;
+
+          //添加图形
+          var g1 = new EC.Geometry;
+          var g2 = new EC.Geometry;
+          var g3 = new EC.Geometry;
+
+          scene.foreLayer.addGeom(g1, g2);
+          scene.backLayer.addGeom(g3);
+
+          //定义路径
+          g1.path.arc(0, 0, 50, 0, Math.PI * 2, false);
+          g2.path.rect(200, 200, 100, 100);
+          g3.path.rect(0, 0, scene.width, scene.height);
+
+          //定义位置
+          g1.pos = {
+            x: 100,
+            y: 100
+          }
+
+          //定义渐变
+          var gradient = foreCTX.createRadialGradient(-20, -20, 0, 0, 0, 50);
+          gradient.addColorStop(0, "#fff");
+          gradient.addColorStop(1, 'red');
+          var gradient2 = backCTX.createLinearGradient(0, 0, scene.width, scene.height);
+          gradient2.addColorStop(0, '#eeee');
+          gradient2.addColorStop(1, '#999');
+
+          //定义贴图
+          var pattern1 = foreCTX.createPattern(EC.assets[0], 'repeat');
+
+          g1.scale(.5, .5);
+          //g1.transform.translateSelf(100, 100);
+
+          g1.setStyle({
+            stroke: 'blue',
+            fill: gradient
+          });
+
+          g2.setStyle({
+            fill: pattern1
+          });
+
+          g3.setStyle({
+            fill: gradient2
+          })
+
+          scene.foreLayer.render(g1, g2);
+
+          scene.backLayer.render();
+
+        }, function(url) {
+          console.log('资源加载失败', url);
+        });
+      </script>
+    </body>
+</html>
