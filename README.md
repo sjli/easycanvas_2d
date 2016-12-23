@@ -5,3 +5,5 @@
 * 结构层级更完善
 * new Path2D替代beginPath
 * 资源加载promise
+
+[示例](https://www.gitbook.com/book/sjli/easycanvas_2d/)
