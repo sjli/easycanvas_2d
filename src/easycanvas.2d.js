@@ -1,6 +1,7 @@
 import Scene from './core/Scene';
 import Geometry from './core/Geometry';
 import Text from './core/Text';
+import Frame from './core/Frame';
 
 var EasyCanvas = {
   mode: '2d',
@@ -12,6 +13,8 @@ var EasyCanvas = {
   Geometry,
 
   Text,
+
+  Frame,
 
   assets: [],
 

@@ -44,14 +44,13 @@ class Text {
   }
 
   get pos() {    
-    return {
-      x: this.transform.e,
-      y: this.transform.f
-    }
+    return [
+      this.transform.e,
+      this.transform.f
+    ]
   }
 
-  set pos({x, y}) {
-    //分离矩阵的其他方法对position的影响
+  set pos([x, y] = [0, 0]) {
     this.transform.e = x;
     this.transform.f = y;
   }

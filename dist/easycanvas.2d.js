@@ -54,9 +54,13 @@
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
 
-	var _Text = __webpack_require__(9);
+	var _Text = __webpack_require__(10);
 
 	var _Text2 = _interopRequireDefault(_Text);
+
+	var _Frame = __webpack_require__(11);
+
+	var _Frame2 = _interopRequireDefault(_Frame);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -70,6 +74,8 @@
 	  Geometry: _Geometry2.default,
 
 	  Text: _Text2.default,
+
+	  Frame: _Frame2.default,
 
 	  assets: [],
 
@@ -185,10 +191,6 @@
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
 
-	var _FPS = __webpack_require__(7);
-
-	var _FPS2 = _interopRequireDefault(_FPS);
-
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -201,18 +203,9 @@
 	  _inherits(BackLayer, _Layer);
 
 	  function BackLayer() {
-	    var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { showFPS: true };
-
 	    _classCallCheck(this, BackLayer);
 
-	    var _this = _possibleConstructorReturn(this, (BackLayer.__proto__ || Object.getPrototypeOf(BackLayer)).call(this));
-
-	    Object.assign(_this.config, config);
-	    if (_this.config.showFPS) {
-	      _this.fps = new _FPS2.default();
-	      _this.addGeom(_this.fps);
-	    }
-	    return _this;
+	    return _possibleConstructorReturn(this, (BackLayer.__proto__ || Object.getPrototypeOf(BackLayer)).apply(this, arguments));
 	  }
 
 	  _createClass(BackLayer, [{
@@ -255,7 +248,7 @@
 	    this.config = config;
 	    this.canvas = document.createElement('canvas');
 	    this.context = this.canvas.getContext('2d');
-	    this.geoms = [];
+	    this.geoms = new Map();
 	    this.texts = [];
 	  }
 
@@ -270,19 +263,56 @@
 	      this.setCoordCenter();
 	    }
 	  }, {
+	    key: 'getGeoms',
+	    value: function getGeoms() {
+	      var geoms = [];
+	      this.geoms.forEach(function (group) {
+	        geoms = geoms.concat(group);
+	      });
+	      return geoms;
+	    }
+	  }, {
 	    key: 'addGeom',
-	    value: function addGeom() {
-	      for (var _len = arguments.length, geoms = Array(_len), _key = 0; _key < _len; _key++) {
-	        geoms[_key] = arguments[_key];
-	      }
+	    value: function addGeom(geom) {
+	      var _this = this;
 
-	      this.geoms = this.geoms.concat(geoms);
+	      //grouped by styles
+	      var group;
+	      var _styleId = void 0;
+	      if (geom._styleUniq) {
+	        _styleId = Symbol();
+	      } else {
+	        _styleId = geom._styleFlat;
+	      }
+	      geom._styleId = _styleId;
+	      if (!this.geoms.has(_styleId)) {
+	        this.geoms.set(_styleId, []);
+	      }
+	      group = this.geoms.get(_styleId);
+	      group.push(geom);
+
+	      //proxy to observe geom style change
+	      //performance ?
+	      if (!geom._addGeomBinded) {
+	        geom._addGeomBinded = true;
+	        geom.event.on('styleUpdate', function () {
+	          //change group store when geom style change
+	          var group = _this.geoms.get(geom._styleId);
+	          group.splice(group.indexOf(geom), 1);
+	          _this.addGeom(geom);
+	        });
+	        geom.event.on('combined', function () {
+	          //remove when combine to other geometry
+	          var group = _this.geoms.get(geom._styleId);
+	          group.splice(group.indexOf(geom), 1);
+	        });
+	      }
 	    }
 	  }, {
 	    key: 'addText',
 	    value: function addText() {
-	      for (var _len2 = arguments.length, texts = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-	        texts[_key2] = arguments[_key2];
+	      for (var _len = arguments.length, texts = Array(_len), _key = 0; _key < _len; _key++) {
+	        texts[_key] = arguments[_key];
 	      }
 
 	      this.texts = this.texts.concat(texts);
@@ -334,55 +364,79 @@
 	  }, {
 	    key: 'renderGeoms',
 	    value: function renderGeoms() {
-	      var _this = this;
+	      var _this2 = this;
 
-	      for (var _len3 = arguments.length, geoms = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-	        geoms[_key3] = arguments[_key3];
+	      for (var _len2 = arguments.length, geoms = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	        geoms[_key2] = arguments[_key2];
 	      }
 
+	      //render grouped by styles, for performance benifits
 	      if (!geoms.length) {
 	        geoms = this.geoms;
+	      } else {
+	        geoms = geoms.reduce(function (ret, geom) {
+	          var _styleId = geom._styleId;
+	          if (!_styleId) {
+	            if (geom._styleUniq) {
+	              _styleId = Symbol();
+	            } else {
+	              _styleId = geom._styleFlat;
+	            }
+	          }
+	          if (!ret.has(_styleId)) {
+	            ret.set(_styleId, []);
+	          }
+	          ret.get(_styleId).push(geom);
+	          return ret;
+	        }, new Map());
 	      }
 
-	      geoms.forEach(function (geom) {
-	        _this.context.save();
-	        var _geom$style = geom.style,
-	            stroke = _geom$style.stroke,
-	            fill = _geom$style.fill,
-	            shadow = _geom$style.shadow,
-	            filter = _geom$style.filter;
+	      geoms.forEach(function (group) {
+	        if (!group.length) {
+	          return;
+	        }
+	        _this2.context.save();
+	        //group path
+	        group.groupPath = new Path2D();
+	        if (group.length > 1) {
+	          group.forEach(function (geom) {
+	            group.groupPath.addPath(geom.path, geom.transform);
+	          });
+	        } else {
+	          group.groupPath.addPath(group[0].path);
+	          _this2.context.currentTransform = _this2.context.currentTransform.multiply(group[0].transform);
+	        }
+
+	        var _group$0$style = group[0].style,
+	            stroke = _group$0$style.stroke,
+	            fill = _group$0$style.fill,
+	            rules = _group$0$style.rules;
 
 
-	        _this.context.currentTransform = _this.context.currentTransform.multiply(geom.transform);
-
-	        var styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'lineWidth', 'lineCap', 'lineJoin', 'miterLimit'];
-
-	        styles.forEach(function (style) {
-	          if (style) {
-	            _this.context[style] = geom.style[style];
-	          }
-	        });
+	        for (var rule in rules) {
+	          _this2.context[rule] = rules[rule];
+	        }
 
 	        if (stroke) {
-	          _this.context.strokeStyle = stroke;
-	          _this.context.stroke(geom.path);
+	          _this2.context.strokeStyle = stroke;
+	          _this2.context.stroke(group.groupPath);
 	        }
 
 	        if (fill) {
-	          _this.context.fillStyle = fill;
-	          _this.context.fill(geom.path);
+	          _this2.context.fillStyle = fill;
+	          _this2.context.fill(group.groupPath);
 	        }
 
-	        _this.context.restore();
+	        _this2.context.restore();
 	      });
 	    }
 	  }, {
 	    key: 'renderTexts',
 	    value: function renderTexts() {
-	      var _this2 = this;
+	      var _this3 = this;
 
-	      for (var _len4 = arguments.length, texts = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-	        texts[_key4] = arguments[_key4];
+	      for (var _len3 = arguments.length, texts = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+	        texts[_key3] = arguments[_key3];
 	      }
 
 	      if (!texts.length) {
@@ -390,15 +444,15 @@
 	      }
 
 	      texts.forEach(function (text) {
-	        _this2.context.save();
+	        _this3.context.save();
 
-	        _this2.context.currentTransform = _this2.context.currentTransform.multiply(text.transform);
+	        _this3.context.currentTransform = _this3.context.currentTransform.multiply(text.transform);
 
 	        var styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'font', 'textAlign', 'textBaseline', 'direction'];
 
 	        styles.forEach(function (style) {
-	          if (style) {
-	            _this2.context[style] = text.style[style];
+	          if (text.style[style]) {
+	            _this3.context[style] = text.style[style];
 	          }
 	        });
 
@@ -406,21 +460,21 @@
 	        text.content.forEach(function (content, i) {
 	          //emulate line-height 
 	          if (i > 0) {
-	            _this2.context.translate(0, text.style.fontSize * text.style.lineHeight);
+	            _this3.context.translate(0, text.style.fontSize * text.style.lineHeight);
 	          }
 
 	          if (text.style.stroke) {
-	            _this2.context.strokeStyle = text.style.stroke;
-	            _this2.context.strokeText(content, 0, 0, text.style.maxWidth);
+	            _this3.context.strokeStyle = text.style.stroke;
+	            _this3.context.strokeText(content, 0, 0, text.style.maxWidth);
 	          }
 
 	          if (text.style.fill) {
-	            _this2.context.fillStyle = text.style.fill;
-	            _this2.context.fillText(content, 0, 0, text.style.maxWidth);
+	            _this3.context.fillStyle = text.style.fill;
+	            _this3.context.fillText(content, 0, 0, text.style.maxWidth);
 	          }
 	        });
 
-	        _this2.context.restore();
+	        _this3.context.restore();
 	      });
 	    }
 	  }]);
@@ -440,6 +494,8 @@
 	  value: true
 	});
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _Transform = __webpack_require__(5);
@@ -450,6 +506,10 @@
 
 	var _Motion2 = _interopRequireDefault(_Motion);
 
+	var _Event = __webpack_require__(7);
+
+	var _Event2 = _interopRequireDefault(_Event);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -458,44 +518,72 @@
 	  function Geometry() {
 	    _classCallCheck(this, Geometry);
 
+	    this.event = new _Event2.default();
 	    this.path = new Path2D();
 	    this.transform = new _Transform2.default();
 	    this.motion = new _Motion2.default();
 	    this.setStyle();
+	    this.children = [];
 	  }
 
 	  _createClass(Geometry, [{
 	    key: 'combine',
-	    value: function combine() {}
+	    value: function combine(geom) {
+	      this.path.addPath(geom.path, geom.transform);
+	      this.children.push(geom);
+	      geom.event.emit('combined');
+	    }
+	  }, {
+	    key: 'updateCombine',
+	    value: function updateCombine() {
+	      var _this = this;
+
+	      this.path = new Path2D();
+	      this.children.forEach(function (geom) {
+	        _this.path.addPath(geom.path, geom.transform);
+	      });
+	    }
 	  }, {
 	    key: 'setStyle',
 	    value: function setStyle() {
+	      var _this2 = this;
+
 	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
 	          _ref$stroke = _ref.stroke,
 	          stroke = _ref$stroke === undefined ? '' : _ref$stroke,
 	          _ref$fill = _ref.fill,
 	          fill = _ref$fill === undefined ? '' : _ref$fill,
-	          _ref$shadowOffsetX = _ref.shadowOffsetX,
-	          shadowOffsetX = _ref$shadowOffsetX === undefined ? '' : _ref$shadowOffsetX,
-	          _ref$shadowOffsetY = _ref.shadowOffsetY,
-	          shadowOffsetY = _ref$shadowOffsetY === undefined ? '' : _ref$shadowOffsetY,
-	          _ref$shadowBlur = _ref.shadowBlur,
-	          shadowBlur = _ref$shadowBlur === undefined ? '' : _ref$shadowBlur,
-	          _ref$shadowColor = _ref.shadowColor,
-	          shadowColor = _ref$shadowColor === undefined ? '' : _ref$shadowColor,
-	          _ref$filter = _ref.filter,
-	          filter = _ref$filter === undefined ? '' : _ref$filter,
-	          _ref$lineWidth = _ref.lineWidth,
-	          lineWidth = _ref$lineWidth === undefined ? '' : _ref$lineWidth,
-	          _ref$lineCap = _ref.lineCap,
-	          lineCap = _ref$lineCap === undefined ? '' : _ref$lineCap,
-	          _ref$lineJoin = _ref.lineJoin,
-	          lineJoin = _ref$lineJoin === undefined ? '' : _ref$lineJoin,
-	          _ref$miterLimit = _ref.miterLimit,
-	          miterLimit = _ref$miterLimit === undefined ? '' : _ref$miterLimit;
+	          _ref$rules = _ref.rules,
+	          rules = _ref$rules === undefined ? {} : _ref$rules;
 
-	      this.style = { stroke: stroke, fill: fill, shadowOffsetX: shadowOffsetX, shadowOffsetY: shadowOffsetY, shadowBlur: shadowBlur, shadowColor: shadowColor,
-	        filter: filter, lineWidth: lineWidth, lineCap: lineCap, lineJoin: lineJoin, miterLimit: miterLimit };
+	      var keys = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', //Warning: filter will obviously lower performance
+	      'lineWidth', 'lineCap', 'lineJoin', 'miterLimit'];
+	      this.style = this.style || { rules: {} };
+	      if (stroke) {
+	        this.style.stroke = stroke;
+	      }
+	      if (fill) {
+	        this.style.fill = fill;
+	      }
+	      keys.forEach(function (key) {
+	        if (rules[key]) {
+	          _this2.style.rules[key] = rules[key];
+	        }
+	      });
+	      var _styleFlat = Object.keys(this.style).reduce(function (ret, key) {
+	        if (key === 'rules') {
+	          var rules = _this2.style.rules;
+	          Object.keys(rules).forEach(function (rule) {
+	            ret[rule] = rules[rule];
+	          });
+	        } else {
+	          ret[key] = _this2.style[key];
+	        }
+	        return ret;
+	      }, {});
+	      this._styleFlat = JSON.stringify(_styleFlat);
+	      this._styleUniq = /.+\{\}/.test(this._styleFlat); // style as unique if there is value = {}
+	      this.event.emit('styleUpdate');
 	    }
 	  }, {
 	    key: 'scale',
@@ -510,21 +598,23 @@
 	  }, {
 	    key: 'updatePos',
 	    value: function updatePos() {
-	      this.pos = this.motion.update(this.pos);
+	      this.motion.update();
+	      this.transform.e = this.motion.pos[0];
+	      this.transform.f = this.motion.pos[1];
 	    }
 	  }, {
 	    key: 'pos',
 	    get: function get() {
-	      return {
-	        x: this.transform.e,
-	        y: this.transform.f
-	      };
+	      return this.motion.pos;
 	    },
-	    set: function set(_ref2) {
-	      var x = _ref2.x,
-	          y = _ref2.y;
+	    set: function set() {
+	      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
+	          _ref3 = _slicedToArray(_ref2, 2),
+	          x = _ref3[0],
+	          y = _ref3[1];
 
-	      //分离矩阵的其他方法对position的影响
+	      this.motion.pos[0] = x;
+	      this.motion.pos[1] = y;
 	      this.transform.e = x;
 	      this.transform.f = y;
 	    }
@@ -603,6 +693,8 @@
 	  value: true
 	});
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -611,43 +703,44 @@
 	  function Motion() {
 	    _classCallCheck(this, Motion);
 
-	    this.setAccel();
-	    this.setVel();
+	    var _motion = new Uint16Array(6);
+	    this.pos = new Uint16Array(_motion.buffer, 0, 2);
+	    this.vel = new Uint16Array(_motion.buffer, 4, 2);
+	    this.accel = new Uint16Array(_motion.buffer, 8, 2);
 	  }
 
 	  _createClass(Motion, [{
 	    key: "setVel",
 	    value: function setVel() {
-	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	          _ref$x = _ref.x,
-	          x = _ref$x === undefined ? 0 : _ref$x,
-	          _ref$y = _ref.y,
-	          y = _ref$y === undefined ? 0 : _ref$y;
+	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
+	          _ref2 = _slicedToArray(_ref, 2),
+	          x = _ref2[0],
+	          y = _ref2[1];
 
-	      this.vel = { x: x, y: y }; //pixel per frame
+	      this.vel[0] = x;
+	      this.vel[1] = y;
 	    }
 	  }, {
 	    key: "setAccel",
 	    value: function setAccel() {
-	      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	          _ref2$x = _ref2.x,
-	          x = _ref2$x === undefined ? 0 : _ref2$x,
-	          _ref2$y = _ref2.y,
-	          y = _ref2$y === undefined ? 0 : _ref2$y;
+	      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
+	          _ref4 = _slicedToArray(_ref3, 2),
+	          x = _ref4[0],
+	          y = _ref4[1];
 
-	      this.accel = { x: x, y: y }; //velocity change per frame
+	      this.accel[0] = x;
+	      this.accel[1] = y;
 	    }
 
 	    //update velocity per frame
 
 	  }, {
 	    key: "update",
-	    value: function update(pos) {
-	      this.vel.x += this.accel.x;
-	      this.vel.y += this.accel.y;
-	      pos.x += this.vel.x;
-	      pos.y += this.vel.y;
-	      return pos;
+	    value: function update() {
+	      this.vel[0] += this.accel[0];
+	      this.vel[1] += this.accel[1];
+	      this.pos[0] += this.vel[0];
+	      this.pos[1] += this.vel[1];
 	    }
 	  }]);
 
@@ -658,39 +751,70 @@
 
 /***/ },
 /* 7 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	'use strict';
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
 
-	var _Geometry2 = __webpack_require__(4);
-
-	var _Geometry3 = _interopRequireDefault(_Geometry2);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	//code from http://www.datchley.name/es6-eventemitter/
 
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	var Event = function () {
+	  function Event() {
+	    _classCallCheck(this, Event);
 
-	var FPS = function (_Geometry) {
-	  _inherits(FPS, _Geometry);
-
-	  function FPS() {
-	    _classCallCheck(this, FPS);
-
-	    return _possibleConstructorReturn(this, (FPS.__proto__ || Object.getPrototypeOf(FPS)).call(this));
+	    this.listeners = new Map();
 	  }
 
-	  return FPS;
-	}(_Geometry3.default);
+	  _createClass(Event, [{
+	    key: "on",
+	    value: function on(label, callback) {
+	      this.listeners.has(label) || this.listeners.set(label, []);
+	      this.listeners.get(label).push(callback);
+	    }
+	  }, {
+	    key: "remove",
+	    value: function remove(label, callback) {
+	      var listeners = this.listeners.get(label),
+	          index = void 0;
 
-	exports.default = FPS;
+	      if (listeners && listeners.length) {
+	        index = listeners.indexOf(callback);
+	        if (index > -1) {
+	          listeners.splice(index, 1);
+	          return true;
+	        }
+	      }
+	      return false;
+	    }
+	  }, {
+	    key: "emit",
+	    value: function emit(label) {
+	      for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	        args[_key - 1] = arguments[_key];
+	      }
+
+	      var listeners = this.listeners.get(label);
+	      if (listeners && listeners.length) {
+	        listeners.forEach(function (listener) {
+	          listener.apply(undefined, args);
+	        });
+	        return true;
+	      }
+	      return false;
+	    }
+	  }]);
+
+	  return Event;
+	}();
+
+	exports.default = Event;
 
 /***/ },
 /* 8 */
@@ -702,9 +826,19 @@
 	  value: true
 	});
 
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	var _Layer2 = __webpack_require__(3);
 
 	var _Layer3 = _interopRequireDefault(_Layer2);
+
+	var _FPS = __webpack_require__(9);
+
+	var _FPS2 = _interopRequireDefault(_FPS);
+
+	var _Frame = __webpack_require__(11);
+
+	var _Frame2 = _interopRequireDefault(_Frame);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -720,8 +854,26 @@
 	  function ForeLayer() {
 	    _classCallCheck(this, ForeLayer);
 
-	    return _possibleConstructorReturn(this, (ForeLayer.__proto__ || Object.getPrototypeOf(ForeLayer)).apply(this, arguments));
+	    var _this = _possibleConstructorReturn(this, (ForeLayer.__proto__ || Object.getPrototypeOf(ForeLayer)).call(this));
+
+	    _this.fps = new _FPS2.default();
+
+	    return _this;
 	  }
+
+	  _createClass(ForeLayer, [{
+	    key: 'showFPS',
+	    value: function showFPS() {
+	      var _this2 = this;
+
+	      var frame = new _Frame2.default(function () {
+	        _this2.fps.update();
+	        _this2.renderGeoms(_this2.fps.box);
+	        _this2.renderTexts(_this2.fps.text);
+	      });
+	      frame.start();
+	    }
+	  }]);
 
 	  return ForeLayer;
 	}(_Layer3.default);
@@ -737,6 +889,72 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _Geometry = __webpack_require__(4);
+
+	var _Geometry2 = _interopRequireDefault(_Geometry);
+
+	var _Text = __webpack_require__(10);
+
+	var _Text2 = _interopRequireDefault(_Text);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var silence = 30;
+
+	var FPS = function () {
+	  function FPS() {
+	    _classCallCheck(this, FPS);
+
+	    this._lastTick = +new Date();
+	    this._tick = 0;
+	    this._fps = 0;
+	    this.box = new _Geometry2.default();
+	    this.text = new _Text2.default();
+	    this.text.content = this._fps + ' fps';
+	    this.box.path.rect(0, 0, 100, 100);
+	    this.box.setStyle({
+	      fill: '#39393c'
+	    });
+	    this.text.setStyle({
+	      fill: '#05ed05'
+	    });
+	  }
+
+	  _createClass(FPS, [{
+	    key: 'update',
+	    value: function update() {
+	      this._tick++;
+	      if (this._tick % silence !== 0) {
+	        return;
+	      }
+	      this._curTick = +new Date();
+	      this._fps = Math.round(1000 / (this._curTick - this._lastTick) * silence);
+	      this.text.content = this._fps + ' fps';
+	      this._lastTick = this._curTick;
+	    }
+	  }]);
+
+	  return FPS;
+	}();
+
+	exports.default = FPS;
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -824,16 +1042,14 @@
 	  }, {
 	    key: 'pos',
 	    get: function get() {
-	      return {
-	        x: this.transform.e,
-	        y: this.transform.f
-	      };
+	      return [this.transform.e, this.transform.f];
 	    },
-	    set: function set(_ref2) {
-	      var x = _ref2.x,
-	          y = _ref2.y;
+	    set: function set() {
+	      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
+	          _ref3 = _slicedToArray(_ref2, 2),
+	          x = _ref3[0],
+	          y = _ref3[1];
 
-	      //分离矩阵的其他方法对position的影响
 	      this.transform.e = x;
 	      this.transform.f = y;
 	    }
@@ -843,6 +1059,84 @@
 	}();
 
 	exports.default = Text;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	//animation frame
+	var frames = [];
+
+	var Frame = function () {
+	  function Frame(handler) {
+	    var _this = this;
+
+	    _classCallCheck(this, Frame);
+
+	    if (typeof handler !== 'function') {
+	      throw new Error('request handler must be a function');
+	    }
+	    this.handler = function () {
+	      handler();
+	      _this.requestId = requestAnimationFrame(_this.handler);
+	    };
+	    this.requestId = null;
+	    frames.push(this);
+	  }
+
+	  _createClass(Frame, [{
+	    key: 'start',
+	    value: function start(flagAll) {
+	      if (this.requestId) {
+	        if (!flagAll) {
+	          console.log('this frame already started');
+	        }
+	        return;
+	      }
+	      this.requestId = requestAnimationFrame(this.handler);
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop(flagAll) {
+	      if (!this.requestId) {
+	        if (!flagAll) {
+	          console.log('this frame already stoped');
+	        }
+	        return;
+	      }
+	      cancelAnimationFrame(this.requestId);
+	      this.requestId = null;
+	    }
+	  }], [{
+	    key: 'startAll',
+	    value: function startAll() {
+	      frames.forEach(function (frame) {
+	        frame.start(true);
+	      });
+	    }
+	  }, {
+	    key: 'stopAll',
+	    value: function stopAll() {
+	      frames.forEach(function (frame) {
+	        frame.stop(true);
+	      });
+	    }
+	  }]);
+
+	  return Frame;
+	}();
+
+	exports.default = Frame;
 
 /***/ }
 /******/ ]);

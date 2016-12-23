@@ -23,10 +23,7 @@
           var box = new EC.Geometry();
 
           box.path.rect(0, 0, 200, 50);
-          box.pos = {
-            x: 200,
-            y: 200
-          };
+          box.pos = [200, 200];
           box.setStyle({
             fill: '#eeeeff',
             stroke: 'black'
@@ -35,10 +32,7 @@
           fore.addGeom(box);
 
           var text1 = new EC.Text('Hello World');
-          text1.pos = {
-            x: 300,
-            y: 200
-          };
+          text1.pos = [300, 200];
 
           text1.setStyle({
             fill: 'black',
@@ -56,10 +50,7 @@
             fontSize: 30
           });
 
-          text2.pos = {
-            x: 200,
-            y: 300
-          }
+          text2.pos = [200, 300]
 
           fore.addText(text2);
 

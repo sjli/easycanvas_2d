@@ -35,7 +35,8 @@
           var g2 = new EC.Geometry;
           var g3 = new EC.Geometry;
 
-          scene.foreLayer.addGeom(g1, g2);
+          scene.foreLayer.addGeom(g1);
+          scene.foreLayer.addGeom(g2);
           scene.backLayer.addGeom(g3);
 
           //定义路径
@@ -44,10 +45,7 @@
           g3.path.rect(0, 0, scene.width, scene.height);
 
           //定义位置
-          g1.pos = {
-            x: 100,
-            y: 100
-          }
+          g1.pos = [100, 100]
 
           //定义渐变
           var gradient = foreCTX.createRadialGradient(-20, -20, 0, 0, 0, 50);
