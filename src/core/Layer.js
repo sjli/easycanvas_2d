@@ -19,46 +19,19 @@ class Layer {
     this.setCoordCenter();
   }
 
-  getGeoms() {
-    var geoms = [];
-    this.geoms.forEach(group => {
-      geoms = geoms.concat(group);
-    });
-    return geoms;
-  }
-
-  addGeom(geom) {
-    //grouped by styles
-    var group;
-    let _styleId;
-    if (geom._styleUniq) {
-      _styleId = Symbol();
-    } else {
-      _styleId = geom._styleFlat;
-    }
-    geom._styleId = _styleId;
-    if (!this.geoms.has(_styleId)) {
-      this.geoms.set(_styleId, []);
-    }
-    group = this.geoms.get(_styleId);
-    group.push(geom);
-
+  addGeom(geom) {    
+    this.geoms.set(geom.id, geom);
 
     //proxy to observe geom style change
     //performance ?
     if (!geom._addGeomBinded) {
       geom._addGeomBinded = true;
-      geom.event.on('styleUpdate', () => {
-        //change group store when geom style change
-        var group = this.geoms.get(geom._styleId);
-        group.splice(group.indexOf(geom), 1);
-        this.addGeom(geom);
-      });
+
       geom.event.on('combined', () => {
         //remove when combine to other geometry
-        var group = this.geoms.get(geom._styleId);
-        group.splice(group.indexOf(geom), 1);
+        this.geoms.delete(geom.id);
       });
+
     }
   }
 
@@ -90,6 +63,7 @@ class Layer {
     var transform = this.context.currentTransform;
     this.canvas.width = this.canvas.width;
     this.context.currentTransform = transform;
+    this.context.clearHitRegions();
   }
 
   render() {
@@ -101,42 +75,25 @@ class Layer {
   }
 
   renderGeoms(...geoms) {
-    //render grouped by styles, for performance benifits
+
     if (!geoms.length) {
       geoms = this.geoms;
-    } else {
-      geoms = geoms.reduce((ret, geom) => {
-        var _styleId = geom._styleId;
-        if (!_styleId) {
-          if (geom._styleUniq) {
-            _styleId = Symbol();
-          } else {
-            _styleId = geom._styleFlat;
-          }
-        }
-        if (!ret.has(_styleId)) {
-          ret.set(_styleId, []);
-        }
-        ret.get(_styleId).push(geom);
-        return ret;
-      }, new Map);
     }
 
-    geoms.forEach(group => {
-      if (!group.length) {return;}
-      this.context.save();
-      //group path
-      group.groupPath = new Path2D;
-      if (group.length > 1) {
-        group.forEach(geom => {
-          group.groupPath.addPath(geom.path, geom.transform);
-        });
-      } else {
-        group.groupPath.addPath(group[0].path);
-        this.context.currentTransform = this.context.currentTransform.multiply(group[0].transform);
-      }
+    geoms.forEach(geom => {
 
-      let {stroke, fill, rules} = group[0].style;
+      this.context.save();
+      
+      this.context.currentTransform = this.context.currentTransform.multiply(geom.transform);
+
+      //add hit region
+      this.context.addHitRegion({
+        path: geom.path,
+        id: geom.id
+      });
+      
+      
+      let {stroke, fill, rules} = geom.style;
 
       for (var rule in rules) {
         this.context[rule] = rules[rule];
@@ -144,14 +101,14 @@ class Layer {
 
       if (stroke) {
         this.context.strokeStyle = stroke;
-        this.context.stroke(group.groupPath);
+        this.context.stroke(geom.path);
       } 
 
       if (fill) {
         this.context.fillStyle = fill;
-        this.context.fill(group.groupPath);
+        this.context.fill(geom.path);
       }
-
+      
       this.context.restore();
 
     });
@@ -197,6 +154,14 @@ class Layer {
 
       this.context.restore();
     });
+  }
+
+  on(type, handler) {
+    this.canvas.addEventListener(type, handler);
+  }
+
+  off(type, handler) {
+    this.canvas.removeEventListener(type, handler);
   }
 
 }

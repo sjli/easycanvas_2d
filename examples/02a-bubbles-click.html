@@ -10,7 +10,7 @@
             width: 100%;
             height: 100%;
           }
-          #start, #stop {
+          #start, #stop, #tip{
             position: absolute;
             bottom: 50px;
             right: 100px;
@@ -18,12 +18,17 @@
           #start {
             right: 200px;
           }
+          #tip {
+            bottom: 10px;
+            right: 100px;
+          }
         </style>
     </head>
     <body>
       <div id="app" class="app"></div>
       <button id="start">start move</button>
       <button id="stop">stop move</button>
+      <p id="tip">Tip: Click bubble to delete it</p>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
         EC.init('#app').then(function() {
@@ -33,7 +38,6 @@
 
           function createBubble(x, y, r) {
             var geom = new EC.Geometry;
-            fore.addGeom(geom);
 
             geom.path.arc(0, 0, r, 0, Math.PI * 2, false);
             var gradient = fore.context.createRadialGradient(- r / 4 >> 0, - r / 4 >> 0, 0, -r / 8, -r / 8, r);
@@ -45,7 +49,7 @@
             geom.setStyle({
               fill: gradient,
               rules: {
-                //filter: 'grayscale(' + Math.random() + ')' //filter will largely lower render performance
+                //filter: 'grayscale(' + Math.random() + ')'
               }
             });
             geom.pos = [x, y];
@@ -54,6 +58,7 @@
               Math.random()*5+.5,
               Math.random()*5+.5
             ]);
+            fore.addGeom(geom);
           }
 
           function createRandomBubbles(n) {
@@ -63,7 +68,7 @@
             });
           }
 
-          createRandomBubbles(100);
+          createRandomBubbles(50);
 
           fore.render();
 
@@ -78,13 +83,27 @@
           var update = function() {
 
             fore.geoms.forEach(geom => {
-              geom.updatePos();
-              var pos = geom.pos;
-              if (pos[0] < 0 || pos[0] > scene.width) {
-                geom.motion.vel[0] *= -1;
-              }
-              if (pos[1] < 0 || pos[1] > scene.height) {
-                geom.motion.vel[1] *= -1;
+              //more detail for dying
+              if (geom._dying > 0) {
+                geom._dying--;
+                geom.setStyle({
+                  fill: 'red',
+                  rules: {
+                    globalAlpha: geom._dying / 5
+                  }
+                });
+                geom.scale(1 + 0.2 / geom._dying, 1 + 0.2 / geom._dying);
+              } else if (geom._dying === 0) {
+                fore.geoms.delete(geom.id);
+              } else {
+                geom.updatePos();
+                var pos = geom.pos;
+                if (pos[0] < 0 || pos[0] > scene.width) {
+                  geom.motion.vel[0] *= -1;
+                }
+                if (pos[1] < 0 || pos[1] > scene.height) {
+                  geom.motion.vel[1] *= -1;
+                }
               }
             });
 
@@ -100,7 +119,15 @@
           document.querySelector('#start').onclick = animate.start.bind(animate, null);
 
           document.querySelector('#stop').onclick = animate.stop.bind(animate, null);
-          
+
+          fore.on('click', function(e) {
+            var id = e.region;
+            if (!id) {return;}
+            // fore.geoms.delete(id); //simply remove from layer, or
+            var geom = fore.geoms.get(id);
+            console.log('dying...');
+            geom._dying = 5;
+          })
         });
 
         

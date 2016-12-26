@@ -2,9 +2,12 @@ import Transform from './Transform'
 import Motion from './Motion'
 import Event from './Event'
 
+let geomIndex = 0;
+
 class Geometry {
 
   constructor() {
+    this.id = '__geom__' + geomIndex++;
     this.event = new Event;
     this.path = new Path2D;
     this.transform = new Transform;
@@ -51,7 +54,8 @@ class Geometry {
       'lineWidth', 
       'lineCap', 
       'lineJoin', 
-      'miterLimit'
+      'miterLimit',
+      'globalAlpha'
     ];
     this.style = this.style || {rules:{}};
     if (stroke) {
@@ -65,19 +69,6 @@ class Geometry {
         this.style.rules[key] = rules[key];
       }
     });
-    var _styleFlat = Object.keys(this.style).reduce((ret, key) => {
-      if (key === 'rules') {
-        var rules = this.style.rules;
-        Object.keys(rules).forEach(rule => {
-          ret[rule] = rules[rule];
-        })
-      } else {
-        ret[key] = this.style[key];
-      }
-      return ret;
-    }, {});
-    this._styleFlat = JSON.stringify(_styleFlat);
-    this._styleUniq = /.+\{\}/.test(this._styleFlat); // style as unique if there is value = {}
     this.event.emit('styleUpdate');
   }
 

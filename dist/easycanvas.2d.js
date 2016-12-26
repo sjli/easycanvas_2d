@@ -263,48 +263,20 @@
 	      this.setCoordCenter();
 	    }
 	  }, {
-	    key: 'getGeoms',
-	    value: function getGeoms() {
-	      var geoms = [];
-	      this.geoms.forEach(function (group) {
-	        geoms = geoms.concat(group);
-	      });
-	      return geoms;
-	    }
-	  }, {
 	    key: 'addGeom',
 	    value: function addGeom(geom) {
 	      var _this = this;
 
-	      //grouped by styles
-	      var group;
-	      var _styleId = void 0;
-	      if (geom._styleUniq) {
-	        _styleId = Symbol();
-	      } else {
-	        _styleId = geom._styleFlat;
-	      }
-	      geom._styleId = _styleId;
-	      if (!this.geoms.has(_styleId)) {
-	        this.geoms.set(_styleId, []);
-	      }
-	      group = this.geoms.get(_styleId);
-	      group.push(geom);
+	      this.geoms.set(geom.id, geom);
 
 	      //proxy to observe geom style change
 	      //performance ?
 	      if (!geom._addGeomBinded) {
 	        geom._addGeomBinded = true;
-	        geom.event.on('styleUpdate', function () {
-	          //change group store when geom style change
-	          var group = _this.geoms.get(geom._styleId);
-	          group.splice(group.indexOf(geom), 1);
-	          _this.addGeom(geom);
-	        });
+
 	        geom.event.on('combined', function () {
 	          //remove when combine to other geometry
-	          var group = _this.geoms.get(geom._styleId);
-	          group.splice(group.indexOf(geom), 1);
+	          _this.geoms.delete(geom.id);
 	        });
 	      }
 	    }
@@ -351,6 +323,7 @@
 	      var transform = this.context.currentTransform;
 	      this.canvas.width = this.canvas.width;
 	      this.context.currentTransform = transform;
+	      this.context.clearHitRegions();
 	    }
 	  }, {
 	    key: 'render',
@@ -370,47 +343,26 @@
 	        geoms[_key2] = arguments[_key2];
 	      }
 
-	      //render grouped by styles, for performance benifits
 	      if (!geoms.length) {
 	        geoms = this.geoms;
-	      } else {
-	        geoms = geoms.reduce(function (ret, geom) {
-	          var _styleId = geom._styleId;
-	          if (!_styleId) {
-	            if (geom._styleUniq) {
-	              _styleId = Symbol();
-	            } else {
-	              _styleId = geom._styleFlat;
-	            }
-	          }
-	          if (!ret.has(_styleId)) {
-	            ret.set(_styleId, []);
-	          }
-	          ret.get(_styleId).push(geom);
-	          return ret;
-	        }, new Map());
 	      }
 
-	      geoms.forEach(function (group) {
-	        if (!group.length) {
-	          return;
-	        }
-	        _this2.context.save();
-	        //group path
-	        group.groupPath = new Path2D();
-	        if (group.length > 1) {
-	          group.forEach(function (geom) {
-	            group.groupPath.addPath(geom.path, geom.transform);
-	          });
-	        } else {
-	          group.groupPath.addPath(group[0].path);
-	          _this2.context.currentTransform = _this2.context.currentTransform.multiply(group[0].transform);
-	        }
+	      geoms.forEach(function (geom) {
 
-	        var _group$0$style = group[0].style,
-	            stroke = _group$0$style.stroke,
-	            fill = _group$0$style.fill,
-	            rules = _group$0$style.rules;
+	        _this2.context.save();
+
+	        _this2.context.currentTransform = _this2.context.currentTransform.multiply(geom.transform);
+
+	        //add hit region
+	        _this2.context.addHitRegion({
+	          path: geom.path,
+	          id: geom.id
+	        });
+
+	        var _geom$style = geom.style,
+	            stroke = _geom$style.stroke,
+	            fill = _geom$style.fill,
+	            rules = _geom$style.rules;
 
 
 	        for (var rule in rules) {
@@ -419,12 +371,12 @@
 
 	        if (stroke) {
 	          _this2.context.strokeStyle = stroke;
-	          _this2.context.stroke(group.groupPath);
+	          _this2.context.stroke(geom.path);
 	        }
 
 	        if (fill) {
 	          _this2.context.fillStyle = fill;
-	          _this2.context.fill(group.groupPath);
+	          _this2.context.fill(geom.path);
 	        }
 
 	        _this2.context.restore();
@@ -477,6 +429,16 @@
 	        _this3.context.restore();
 	      });
 	    }
+	  }, {
+	    key: 'on',
+	    value: function on(type, handler) {
+	      this.canvas.addEventListener(type, handler);
+	    }
+	  }, {
+	    key: 'off',
+	    value: function off(type, handler) {
+	      this.canvas.removeEventListener(type, handler);
+	    }
 	  }]);
 
 	  return Layer;
@@ -514,10 +476,13 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+	var geomIndex = 0;
+
 	var Geometry = function () {
 	  function Geometry() {
 	    _classCallCheck(this, Geometry);
 
+	    this.id = '__geom__' + geomIndex++;
 	    this.event = new _Event2.default();
 	    this.path = new Path2D();
 	    this.transform = new _Transform2.default();
@@ -557,7 +522,7 @@
 	          rules = _ref$rules === undefined ? {} : _ref$rules;
 
 	      var keys = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', //Warning: filter will obviously lower performance
-	      'lineWidth', 'lineCap', 'lineJoin', 'miterLimit'];
+	      'lineWidth', 'lineCap', 'lineJoin', 'miterLimit', 'globalAlpha'];
 	      this.style = this.style || { rules: {} };
 	      if (stroke) {
 	        this.style.stroke = stroke;
@@ -570,19 +535,6 @@
 	          _this2.style.rules[key] = rules[key];
 	        }
 	      });
-	      var _styleFlat = Object.keys(this.style).reduce(function (ret, key) {
-	        if (key === 'rules') {
-	          var rules = _this2.style.rules;
-	          Object.keys(rules).forEach(function (rule) {
-	            ret[rule] = rules[rule];
-	          });
-	        } else {
-	          ret[key] = _this2.style[key];
-	        }
-	        return ret;
-	      }, {});
-	      this._styleFlat = JSON.stringify(_styleFlat);
-	      this._styleUniq = /.+\{\}/.test(this._styleFlat); // style as unique if there is value = {}
 	      this.event.emit('styleUpdate');
 	    }
 	  }, {
