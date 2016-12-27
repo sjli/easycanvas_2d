@@ -135,6 +135,10 @@
 
 	var _ForeLayer2 = _interopRequireDefault(_ForeLayer);
 
+	var _FPS = __webpack_require__(9);
+
+	var _FPS2 = _interopRequireDefault(_FPS);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -145,6 +149,7 @@
 
 	    this.backLayer = new _BackLayer2.default();
 	    this.foreLayer = new _ForeLayer2.default();
+	    this.fps = new _FPS2.default();
 	    this.mount(container);
 	    this.width = container.offsetWidth;
 	    this.height = container.offsetHeight;
@@ -155,6 +160,7 @@
 	    value: function mount(container) {
 	      this.backLayer.mount(container);
 	      this.foreLayer.mount(container);
+	      this.fps.mount(container);
 	    }
 	  }, {
 	    key: 'getRandomPoint',
@@ -163,6 +169,16 @@
 	        x: Math.random() * this.width >> 0,
 	        y: Math.random() * this.height >> 0
 	      };
+	    }
+	  }, {
+	    key: 'showFPS',
+	    value: function showFPS() {
+	      this.fps.show();
+	    }
+	  }, {
+	    key: 'hideFPS',
+	    value: function hideFPS() {
+	      this.fps.hide();
 	    }
 	  }]);
 
@@ -256,8 +272,8 @@
 	    key: 'mount',
 	    value: function mount(container) {
 	      container.appendChild(this.canvas);
-	      this.canvas.width = container.offsetWidth;
-	      this.canvas.height = container.offsetHeight;
+	      this.canvas.width = this.config.width || container.offsetWidth;
+	      this.canvas.height = this.config.width || container.offsetHeight;
 	      this.canvas.style.cssText = 'position: absolute; top: 0; left: 0';
 	      this.correctPixel();
 	      this.setCoordCenter();
@@ -778,19 +794,9 @@
 	  value: true
 	});
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 	var _Layer2 = __webpack_require__(3);
 
 	var _Layer3 = _interopRequireDefault(_Layer2);
-
-	var _FPS = __webpack_require__(9);
-
-	var _FPS2 = _interopRequireDefault(_FPS);
-
-	var _Frame = __webpack_require__(11);
-
-	var _Frame2 = _interopRequireDefault(_Frame);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -806,26 +812,8 @@
 	  function ForeLayer() {
 	    _classCallCheck(this, ForeLayer);
 
-	    var _this = _possibleConstructorReturn(this, (ForeLayer.__proto__ || Object.getPrototypeOf(ForeLayer)).call(this));
-
-	    _this.fps = new _FPS2.default();
-
-	    return _this;
+	    return _possibleConstructorReturn(this, (ForeLayer.__proto__ || Object.getPrototypeOf(ForeLayer)).call(this));
 	  }
-
-	  _createClass(ForeLayer, [{
-	    key: 'showFPS',
-	    value: function showFPS() {
-	      var _this2 = this;
-
-	      var frame = new _Frame2.default(function () {
-	        _this2.fps.update();
-	        _this2.renderGeoms(_this2.fps.box);
-	        _this2.renderTexts(_this2.fps.text);
-	      });
-	      frame.start();
-	    }
-	  }]);
 
 	  return ForeLayer;
 	}(_Layer3.default);
@@ -852,47 +840,118 @@
 
 	var _Text2 = _interopRequireDefault(_Text);
 
+	var _Layer2 = __webpack_require__(3);
+
+	var _Layer3 = _interopRequireDefault(_Layer2);
+
+	var _Frame = __webpack_require__(11);
+
+	var _Frame2 = _interopRequireDefault(_Frame);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var silence = 30;
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
-	var FPS = function () {
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var textRate = 50; //40frame
+	var refreshRate = 2; //2frame
+
+	var FPS = function (_Layer) {
+	  _inherits(FPS, _Layer);
+
 	  function FPS() {
+	    var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+	      width: 100,
+	      height: 100
+	    };
+
 	    _classCallCheck(this, FPS);
 
-	    this._lastTick = +new Date();
-	    this._tick = 0;
-	    this._fps = 0;
-	    this.box = new _Geometry2.default();
-	    this.text = new _Text2.default();
-	    this.text.content = this._fps + ' fps';
-	    this.box.path.rect(0, 0, 100, 100);
-	    this.box.setStyle({
+	    var _this = _possibleConstructorReturn(this, (FPS.__proto__ || Object.getPrototypeOf(FPS)).call(this));
+
+	    Object.assign(_this.config, config);
+
+	    _this._lastTick = +new Date();
+	    _this._tick = 0;
+	    _this._fps = 60;
+	    _this._data = new Uint8Array(100).fill(60);
+	    _this.box = new _Geometry2.default();
+	    _this.text = new _Text2.default();
+	    _this.text.content = _this._fps + ' fps';
+	    _this.box.path.rect(0, 0, 100, 100);
+
+	    _this.box.setStyle({
 	      fill: '#39393c'
 	    });
-	    this.text.setStyle({
+	    _this.text.setStyle({
 	      fill: '#05ed05'
 	    });
+	    return _this;
 	  }
 
 	  _createClass(FPS, [{
+	    key: '_renderLines',
+	    value: function _renderLines() {
+	      var path = new Path2D();
+	      var data = this._data;
+	      var len = data.byteLength;
+	      // round by 4, to make more smoothing curve
+	      path.moveTo(0, 100 - data[0] >> 2 << 2);
+	      for (var i = 1; i < len; i++) {
+	        path.lineTo(i, 100 - data[i] >> 2 << 2);
+	      };
+	      this.context.save();
+	      this.context.strokeStyle = '#05ed05';
+	      this.context.stroke(path);
+	      this.context.restore();
+	    }
+	  }, {
+	    key: 'show',
+	    value: function show() {
+	      var _this2 = this;
+
+	      this.frame = new _Frame2.default(function () {
+	        _this2.update();
+	        _this2.renderGeoms(_this2.box);
+	        _this2.renderTexts(_this2.text);
+	        _this2._renderLines();
+	      });
+	      this.frame.start();
+	    }
+	  }, {
+	    key: 'hide',
+	    value: function hide() {
+	      this.frame.stop();
+	      this.clear();
+	    }
+	  }, {
 	    key: 'update',
 	    value: function update() {
 	      this._tick++;
-	      if (this._tick % silence !== 0) {
-	        return;
+
+	      //update fps
+	      if (this._tick % refreshRate === 0) {
+	        this._curTick = +new Date();
+	        this._fps = (1000 / (this._curTick - this._lastTick) * refreshRate).toFixed(1);
+	        this._lastTick = this._curTick;
 	      }
-	      this._curTick = +new Date();
-	      this._fps = Math.round(1000 / (this._curTick - this._lastTick) * silence);
-	      this.text.content = this._fps + ' fps';
-	      this._lastTick = this._curTick;
+
+	      //update points
+	      var _old = new Uint8Array(this._data.buffer, 1);
+	      this._data.set(_old);
+	      this._data[99] = this._fps;
+
+	      if (this._tick % textRate === 0) {
+	        this.text.content = this._fps + ' fps';
+	      }
 	    }
 	  }]);
 
 	  return FPS;
-	}();
+	}(_Layer3.default);
 
 	exports.default = FPS;
 

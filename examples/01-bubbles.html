@@ -20,6 +20,8 @@
           var scene = EC.addScene();
           var fore = scene.foreLayer;
 
+          scene.showFPS();
+
           function createBubble(x, y, r) {
             var geom = new EC.Geometry;
             fore.addGeom(geom);

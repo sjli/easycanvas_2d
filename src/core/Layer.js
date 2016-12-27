@@ -12,8 +12,8 @@ class Layer {
 
   mount(container) {
     container.appendChild(this.canvas);
-    this.canvas.width = container.offsetWidth;
-    this.canvas.height = container.offsetHeight;
+    this.canvas.width = this.config.width || container.offsetWidth;
+    this.canvas.height = this.config.width || container.offsetHeight;
     this.canvas.style.cssText = 'position: absolute; top: 0; left: 0';
     this.correctPixel();
     this.setCoordCenter();
