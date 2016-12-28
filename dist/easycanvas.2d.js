@@ -77,7 +77,7 @@
 
 	  Frame: _Frame2.default,
 
-	  assets: [],
+	  assets: new Map(),
 
 	  init: function init(selector) {
 	    var urls = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
@@ -94,7 +94,7 @@
 	      return new Promise(function (resolve, reject) {
 	        var img = new Image();
 	        img.onload = function () {
-	          EasyCanvas.assets[i] = img;
+	          EasyCanvas.assets.set(url, img);
 	          resolve();
 	        };
 	        img.onerror = function () {
@@ -607,13 +607,31 @@
 	    }
 	  }, {
 	    key: 'scale',
-	    value: function scale(sx, sy) {
-	      this.transform.scaleSelf(sx, sy);
+	    value: function scale() {
+	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	        args[_key] = arguments[_key];
+	      }
+
+	      this.transform.scaleSelf.apply(this.transform, args);
 	    }
 	  }, {
 	    key: 'rotate',
-	    value: function rotate(deg) {
-	      this.transform.rotateSelf(deg);
+	    value: function rotate() {
+	      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	        args[_key2] = arguments[_key2];
+	      }
+
+	      this.transform.rotateSelf.apply(this.transform, args);
+	    }
+	  }, {
+	    key: 'translate',
+	    value: function translate(dx, dy) {
+	      this.pos = [dx, dy];
+	    }
+	  }, {
+	    key: 'transformOrigin',
+	    value: function transformOrigin(x, y) {
+	      this.transform.setOrigin(x, y);
 	    }
 	  }, {
 	    key: 'updatePos',
@@ -635,8 +653,7 @@
 
 	      this.motion.pos[0] = x;
 	      this.motion.pos[1] = y;
-	      this.transform.e = x;
-	      this.transform.f = y;
+	      this.transform.translateSelf(x, y);
 	    }
 	  }]);
 
@@ -649,57 +666,65 @@
 /* 5 */
 /***/ function(module, exports) {
 
-	"use strict";
+	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	//a polyfill for extending dommatrix fns to svgmatrix
-	var Transform = function () {
-	  function Transform(matrix) {
-	    _classCallCheck(this, Transform);
 
-	    var transform = matrix || document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
-	    transform.scaleSelf = this.scaleSelf.bind(transform);
-	    transform.rotateSelf = this.rotateSelf.bind(transform);
-	    transform.translateSelf = this.translateSelf.bind(transform);
-	    return transform;
-	  }
+	var cloneTransform = function cloneTransform(origin, dist) {
+	  ['a', 'b', 'c', 'd', 'e', 'f'].forEach(function (v) {
+	    dist[v] = origin[v];
+	  });
+	};
 
-	  _createClass(Transform, [{
-	    key: "scaleSelf",
-	    value: function scaleSelf(sx, sy) {
-	      Transform.setTransform(this.scale(sx, sy), this);
-	      return this;
-	    }
-	  }, {
-	    key: "rotateSelf",
-	    value: function rotateSelf(deg) {
-	      Transform.setTransform(this.rotate(deg), this);
-	      return this;
-	    }
-	  }, {
-	    key: "translateSelf",
-	    value: function translateSelf(dx, dy) {
-	      Transform.setTransform(this.translate(dx, dy), this);
-	      return this;
-	    }
-	  }], [{
-	    key: "setTransform",
-	    value: function setTransform(origin, dist) {
-	      ['a', 'b', 'c', 'd', 'e', 'f'].forEach(function (v) {
-	        dist[v] = origin[v];
-	      });
-	    }
-	  }]);
+	var regNoTrans = /((?!translate).{9}|^.{0,8})Self/;
 
-	  return Transform;
-	}();
+	var Transform = function Transform() {
+	  _classCallCheck(this, Transform);
+
+	  var self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+	  //get/set from shadow matrix
+	  self.__shadow = new DOMMatrix();
+
+	  var props = Object.getOwnPropertyNames(SVGMatrix.prototype);
+	  var selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf", "scaleSelf", "scale3dSelf", "rotateSelf", "rotateFromVectorSelf", "rotateAxisAngleSelf", "skewXSelf", "skewYSelf", "invertSelf"];
+	  props = props.concat(selfProps);
+
+	  self.setOrigin = function (x, y) {
+	    self.__originChanged = true;
+	    self.origin = [x, y];
+	  };
+
+	  props.forEach(function (prop) {
+	    if (prop === 'constructor') {
+	      return;
+	    }
+	    self[prop] = function () {
+	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	        args[_key] = arguments[_key];
+	      }
+
+	      //transform origin
+	      if (self.__originChanged && regNoTrans.test(prop)) {
+	        self.__shadow.translateSelf(self.origin[0], self.origin[1]);
+	      }
+
+	      self.__shadow[prop].apply(self.__shadow, args);
+
+	      if (self.__originChanged && regNoTrans.test(prop)) {
+	        self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
+	      }
+	      cloneTransform(self.__shadow, self);
+	    };
+	  });
+
+	  return self;
+	};
 
 	exports.default = Transform;
 

@@ -16,7 +16,7 @@ var EasyCanvas = {
 
   Frame,
 
-  assets: [],
+  assets: new Map,
 
   init: (selector, urls = []) => {
     //init container
@@ -31,7 +31,7 @@ var EasyCanvas = {
       return new Promise((resolve, reject) => {
         let img = new Image;
         img.onload = () => {
-          EasyCanvas.assets[i] = img;
+          EasyCanvas.assets.set(url, img);
           resolve();
         };
         img.onerror = () => {

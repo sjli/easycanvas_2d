@@ -1,35 +1,53 @@
 //a polyfill for extending dommatrix fns to svgmatrix
+
+let cloneTransform = (origin, dist) => {
+  ['a', 'b', 'c', 'd', 'e', 'f'].forEach(v => {
+    dist[v] = origin[v];
+  });
+}
+
+let regNoTrans = /((?!translate).{9}|^.{0,8})Self/;
+
 class Transform {
 
-  constructor(matrix) {
-    var transform = matrix || document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
-    transform.scaleSelf = this.scaleSelf.bind(transform);
-    transform.rotateSelf = this.rotateSelf.bind(transform);
-    transform.translateSelf = this.translateSelf.bind(transform);
-    return transform;
-  }
+  constructor() {
+    var self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+    //get/set from shadow matrix
+    self.__shadow = new DOMMatrix;
 
-  scaleSelf(sx, sy) {
-    Transform.setTransform(this.scale(sx, sy), this);
-    return this;
-  }
+    let props = Object.getOwnPropertyNames(SVGMatrix.prototype);
+    let selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf",
+                     "scaleSelf", "scale3dSelf", "rotateSelf", 
+                     "rotateFromVectorSelf", "rotateAxisAngleSelf", 
+                     "skewXSelf", "skewYSelf", "invertSelf"];
+    props = props.concat(selfProps);
 
-  rotateSelf(deg) {
-    Transform.setTransform(this.rotate(deg), this);
-    return this;
-  }
+    self.setOrigin = (x, y) => {
+      self.__originChanged = true;
+      self.origin = [x, y];
+    }
 
-  translateSelf(dx, dy) {
-    Transform.setTransform(this.translate(dx, dy), this);
-    return this;
-  }
+    props.forEach(prop => {
+      if (prop === 'constructor') {return;}
+      self[prop] = (...args) => {
+        //transform origin
+        if (self.__originChanged && regNoTrans.test(prop)) {
+          self.__shadow.translateSelf(self.origin[0], self.origin[1]);
+        }
 
-  static setTransform(origin, dist) {
-    ['a', 'b', 'c', 'd', 'e', 'f'].forEach(v => {
-      dist[v] = origin[v];
+        self.__shadow[prop].apply(self.__shadow, args);
+
+        if (self.__originChanged && regNoTrans.test(prop)) {
+          self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
+        }
+        cloneTransform(self.__shadow, self);
+      }
     });
+
+    return self;
   }
 
 }
+
 
 export default Transform;

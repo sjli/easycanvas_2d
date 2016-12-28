@@ -24,42 +24,40 @@
 
           //初始化场景
           var scene = EC.addScene();
-          var foreCTX = scene.foreLayer.context;
-          var backCTX = scene.backLayer.context;
+          var fore = scene.foreLayer;
+          var back = scene.backLayer;
 
-          scene.foreLayer.setCoordCenter(200, 300);
-          scene.foreLayer.config.showAxis = true;
+          fore.setCoordCenter(200, 300);
+          fore.config.showAxis = true;
 
           //添加图形
           var g1 = new EC.Geometry;
           var g2 = new EC.Geometry;
           var g3 = new EC.Geometry;
 
-          scene.foreLayer.addGeom(g1);
-          scene.foreLayer.addGeom(g2);
-          scene.backLayer.addGeom(g3);
+          fore.addGeom(g1);
+          fore.addGeom(g2);
+          back.addGeom(g3);
 
           //定义路径
           g1.path.arc(0, 0, 50, 0, Math.PI * 2, false);
-          g2.path.rect(200, 200, 100, 100);
+          g2.path.rect(0, 0, 100, 100);
           g3.path.rect(0, 0, scene.width, scene.height);
 
           //定义位置
-          g1.pos = [100, 100]
+          g1.pos = [100, 100];
+          g2.pos = [200, 200];
 
           //定义渐变
-          var gradient = foreCTX.createRadialGradient(-20, -20, 0, 0, 0, 50);
+          var gradient = fore.context.createRadialGradient(-20, -20, 0, 0, 0, 50);
           gradient.addColorStop(0, "#fff");
           gradient.addColorStop(1, 'red');
-          var gradient2 = backCTX.createLinearGradient(0, 0, scene.width, scene.height);
+          var gradient2 = back.context.createLinearGradient(0, 0, scene.width, scene.height);
           gradient2.addColorStop(0, '#eeee');
           gradient2.addColorStop(1, '#999');
 
           //定义贴图
-          var pattern1 = foreCTX.createPattern(EC.assets[0], 'repeat');
-
-          g1.scale(.5, .5);
-          //g1.transform.translateSelf(100, 100);
+          var pattern1 = fore.context.createPattern(EC.assets.get(urls[0]), 'repeat');
 
           g1.setStyle({
             stroke: 'blue',
@@ -72,12 +70,27 @@
 
           g3.setStyle({
             fill: gradient2
-          })
+          });
 
-          scene.foreLayer.render(g1, g2);
+          //定义变换
+          g1.scale(.5, .5);
+          g2.transform.setOrigin(50, 50);
+          var rotateDeg = 1;
 
-          scene.backLayer.render();
+          fore.render(g1, g2);
 
+          back.render();
+
+          //rotate animation
+          var rot = new EC.Frame(function() {
+            g2.rotate(rotateDeg);
+
+            fore.clear();
+            fore.render();
+          });
+
+          rot.start();
+          
         }, function(url) {
           console.log('资源加载失败', url);
         });

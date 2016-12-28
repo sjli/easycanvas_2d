@@ -36,8 +36,7 @@ class Geometry {
   set pos([x, y] = [0, 0]) {
     this.motion.pos[0] = x;
     this.motion.pos[1] = y;
-    this.transform.e = x;
-    this.transform.f = y;
+    this.transform.translateSelf(x, y);
   }
 
   setStyle({
@@ -72,12 +71,20 @@ class Geometry {
     this.event.emit('styleUpdate');
   }
 
-  scale(sx, sy) {
-    this.transform.scaleSelf(sx, sy);
+  scale(...args) {
+    this.transform.scaleSelf.apply(this.transform, args);
   }
 
-  rotate(deg) {
-    this.transform.rotateSelf(deg);
+  rotate(...args) {
+    this.transform.rotateSelf.apply(this.transform, args);
+  }
+
+  translate(dx, dy) {
+    this.pos = [dx, dy];
+  }
+
+  transformOrigin(x, y) {
+    this.transform.setOrigin(x, y);
   }
 
   updatePos() {
