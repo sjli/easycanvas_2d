@@ -1,10 +1,10 @@
 class Motion {
 
   constructor() {
-    var _motion = new Uint16Array(6);
-    this.pos = new Uint16Array(_motion.buffer, 0, 2);
-    this.vel = new Uint16Array(_motion.buffer, 4, 2);
-    this.accel = new Uint16Array(_motion.buffer, 8, 2);
+    var _motion = new Int16Array(6);
+    this.pos = new Int16Array(_motion.buffer, 0, 2);
+    this.vel = new Int16Array(_motion.buffer, 4, 2);
+    this.accel = new Int16Array(_motion.buffer, 8, 2);
   }
 
   setVel([x, y] = [0, 0]) {

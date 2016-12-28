@@ -249,6 +249,8 @@
 	  value: true
 	});
 
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -445,9 +447,59 @@
 	        _this3.context.restore();
 	      });
 	    }
+
+	    //user events
+
 	  }, {
 	    key: 'on',
 	    value: function on(type, handler) {
+	      var _this4 = this;
+
+	      if (type === 'drag') {
+	        var _ret = function () {
+	          var startType = ['mousedown', 'touchstart'];
+	          var moveType = ['mousemove', 'touchmove'];
+	          var endType = ['mouseup', 'touchend'];
+	          var targetId = null;
+	          var sx = void 0,
+	              sy = void 0,
+	              ex = void 0,
+	              ey = void 0;
+	          startType.forEach(function (type) {
+	            _this4.canvas.addEventListener(type, function (e) {
+	              targetId = e.region;
+	              sx = e.clientX;
+	              sy = e.clientY;
+	            });
+	          });
+
+	          endType.forEach(function (type) {
+	            _this4.canvas.addEventListener(type, function (e) {
+	              targetId = null;
+	            });
+	          });
+
+	          moveType.forEach(function (type) {
+	            _this4.canvas.addEventListener(type, function (e) {
+	              if (targetId) {
+	                ex = e.clientX;
+	                ey = e.clientY;
+	                e.dx = ex - sx;
+	                e.dy = ey - sy;
+	                sx = ex;
+	                sy = ey;
+	                handler(e, targetId);
+	              }
+	            });
+	          });
+
+	          return {
+	            v: void 0
+	          };
+	        }();
+
+	        if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+	      }
 	      this.canvas.addEventListener(type, handler);
 	    }
 	  }, {
@@ -671,10 +723,10 @@
 	  function Motion() {
 	    _classCallCheck(this, Motion);
 
-	    var _motion = new Uint16Array(6);
-	    this.pos = new Uint16Array(_motion.buffer, 0, 2);
-	    this.vel = new Uint16Array(_motion.buffer, 4, 2);
-	    this.accel = new Uint16Array(_motion.buffer, 8, 2);
+	    var _motion = new Int16Array(6);
+	    this.pos = new Int16Array(_motion.buffer, 0, 2);
+	    this.vel = new Int16Array(_motion.buffer, 4, 2);
+	    this.accel = new Int16Array(_motion.buffer, 8, 2);
 	  }
 
 	  _createClass(Motion, [{

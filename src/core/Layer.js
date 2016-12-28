@@ -156,7 +156,44 @@ class Layer {
     });
   }
 
+  //user events
   on(type, handler) {
+    if (type === 'drag') {
+      let startType = ['mousedown', 'touchstart'];
+      let moveType = ['mousemove', 'touchmove'];
+      let endType = ['mouseup', 'touchend'];
+      let targetId = null;
+      let sx, sy, ex, ey;
+      startType.forEach(type => {
+        this.canvas.addEventListener(type, e => {
+          targetId = e.region;
+          sx = e.clientX;
+          sy = e.clientY;
+        });
+      });
+
+      endType.forEach(type => {
+        this.canvas.addEventListener(type, e => {
+          targetId = null;
+        });
+      });
+
+      moveType.forEach(type => {
+        this.canvas.addEventListener(type, e => {
+          if (targetId) {
+            ex = e.clientX;
+            ey = e.clientY;
+            e.dx = ex - sx;
+            e.dy = ey - sy;
+            sx = ex;
+            sy = ey;
+            handler(e, targetId);
+          }
+        });
+      });
+      
+      return;
+    }
     this.canvas.addEventListener(type, handler);
   }
 
