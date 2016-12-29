@@ -84,7 +84,7 @@
 
           var update = function() {
 
-            fore.geoms.forEach(geom => {
+            fore.geoms.forEach(function(geom) {
               //more detail for dying
               if (geom._dying > 0) {
                 geom._dying--;

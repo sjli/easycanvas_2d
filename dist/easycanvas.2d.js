@@ -626,7 +626,8 @@
 	  }, {
 	    key: 'translate',
 	    value: function translate(dx, dy) {
-	      this.pos = [dx, dy];
+	      var pos = this.pos;
+	      this.pos = [pos[0] + dx, pos[1] + dy];
 	    }
 	  }, {
 	    key: 'transformOrigin',
@@ -637,8 +638,19 @@
 	    key: 'updatePos',
 	    value: function updatePos() {
 	      this.motion.update();
-	      this.transform.e = this.motion.pos[0];
-	      this.transform.f = this.motion.pos[1];
+	      var pos = [this.motion.pos[0], this.motion.pos[1]];
+	      var _transform = this.transform,
+	          e = _transform.e,
+	          f = _transform.f;
+
+	      this.transform.multiplySelf({
+	        a: 1,
+	        b: 0,
+	        c: 0,
+	        d: 1,
+	        e: pos[0] - e,
+	        f: pos[1] - f
+	      });
 	    }
 	  }, {
 	    key: 'pos',
@@ -651,9 +663,22 @@
 	          x = _ref3[0],
 	          y = _ref3[1];
 
+	      var pos = this.motion.pos;
+	      var dx = x - pos[0];
+	      var dy = y - pos[1];
+	      if (dx === 0 && dy === 0) {
+	        return;
+	      }
 	      this.motion.pos[0] = x;
 	      this.motion.pos[1] = y;
-	      this.transform.translateSelf(x, y);
+	      this.transform.multiplySelf({
+	        a: 1,
+	        b: 0,
+	        c: 0,
+	        d: 1,
+	        e: dx,
+	        f: dy
+	      });
 	    }
 	  }]);
 
@@ -693,6 +718,7 @@
 
 	  var props = Object.getOwnPropertyNames(SVGMatrix.prototype);
 	  var selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf", "scaleSelf", "scale3dSelf", "rotateSelf", "rotateFromVectorSelf", "rotateAxisAngleSelf", "skewXSelf", "skewYSelf", "invertSelf"];
+	  var excludes = ['constructor', 'a', 'b', 'c', 'd', 'e', 'f'];
 	  props = props.concat(selfProps);
 
 	  self.setOrigin = function (x, y) {
@@ -701,7 +727,7 @@
 	  };
 
 	  props.forEach(function (prop) {
-	    if (prop === 'constructor') {
+	    if (excludes.indexOf(prop) > -1) {
 	      return;
 	    }
 	    self[prop] = function () {

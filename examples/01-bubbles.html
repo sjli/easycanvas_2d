@@ -30,9 +30,9 @@
             var geom = new EC.Geometry;
             fore.addGeom(geom);
 
-            geom.path.arc(x, y, r, 0, Math.PI * 2, false);
+            geom.path.arc(0, 0, r, 0, Math.PI * 2, false);
 
-            var gradient = fore.context.createRadialGradient(x - r / 4 >> 0, y - r / 4 >> 0, 0, x, y, r);
+            var gradient = fore.context.createRadialGradient(- r / 4 >> 0, - r / 4 >> 0, 0, 0, 0, r);
             gradient.addColorStop(0, '#fff');
             gradient.addColorStop(1, "rgb(" + (Math.random() * 256 >> 0) + "," + (Math.random() * 256 >> 0) + "," + (Math.random() * 256 >> 0) + ")");
 
@@ -40,6 +40,8 @@
               fill: gradient,
               filter: 'grayscale(' + Math.random() + ')'
             });
+
+            geom.pos = [x, y];
           }
 
           function createRandomBubbles(n) {
@@ -61,7 +63,7 @@
             fore.clear();
             fore.render();
           })
-          window.fore = fore;
+          window.fore = fore; //for debug
         });
 
         

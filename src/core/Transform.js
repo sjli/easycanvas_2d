@@ -11,7 +11,7 @@ let regNoTrans = /((?!translate).{9}|^.{0,8})Self/;
 class Transform {
 
   constructor() {
-    var self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+    let self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
     //get/set from shadow matrix
     self.__shadow = new DOMMatrix;
 
@@ -20,6 +20,7 @@ class Transform {
                      "scaleSelf", "scale3dSelf", "rotateSelf", 
                      "rotateFromVectorSelf", "rotateAxisAngleSelf", 
                      "skewXSelf", "skewYSelf", "invertSelf"];
+    let excludes = ['constructor', 'a', 'b', 'c', 'd', 'e', 'f'];
     props = props.concat(selfProps);
 
     self.setOrigin = (x, y) => {
@@ -28,7 +29,7 @@ class Transform {
     }
 
     props.forEach(prop => {
-      if (prop === 'constructor') {return;}
+      if (excludes.indexOf(prop) > -1) {return;}
       self[prop] = (...args) => {
         //transform origin
         if (self.__originChanged && regNoTrans.test(prop)) {
