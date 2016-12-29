@@ -1,67 +1,67 @@
 <!Doctype html>
 <html>
-    <head>
-      <meta charset="utf-8"/>
-      <title>Example</title>
-      <style type="text/css">
-        html,
-        body, 
-        .app {
-          width: 100%;
-          height: 100%;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="app" class="app"></div>
-      <script src="../dist/easycanvas.2d.js"></script>
-      <script type="text/javascript">
-        EC.init('#app').then(function() {
-          var scene = EC.addScene();
-          var fore = scene.foreLayer;
+  <head>
+    <meta charset="utf-8"/>
+    <title>Example</title>
+    <style type="text/css">
+      html,
+      body, 
+      .app {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app"></div>
+    <script src="../dist/easycanvas.2d.js"></script>
+    <script type="text/javascript">
+      EC.init('#app').then(function() {
+        var scene = EC.addScene();
+        var fore = scene.foreLayer;
 
-          var box = new EC.Geometry();
+        var box = new EC.Geometry();
 
-          box.path.rect(0, 0, 200, 50);
-          box.pos = [200, 200];
-          box.setStyle({
-            fill: '#eeeeff',
-            stroke: 'black'
-          });
-
-          fore.addGeom(box);
-
-          var text1 = new EC.Text('Hello World');
-          text1.pos = [300, 200];
-
-          text1.setStyle({
-            fill: 'black',
-            fontSize: 40,
-            textAlign: 'center',
-            maxWidth: 180
-          })
-
-          fore.addText(text1);
-
-          var text2 = new EC.Text('Hello\nMulti<br>Line');
-          text2.setStyle({
-            fill: 'black',
-            lineHeight: 1.2,
-            fontSize: 30
-          });
-
-          text2.pos = [200, 300]
-
-          fore.addText(text2);
-
-          fore.render();
-
+        box.path.rect(0, 0, 200, 50);
+        box.pos = [200, 200];
+        box.setStyle({
+          fill: '#eeeeff',
+          stroke: 'black'
         });
 
-        
+        fore.addGeom(box);
 
-        
-        
-      </script>
-    </body>
+        var text1 = new EC.Text('Hello World');
+        text1.pos = [300, 200];
+
+        text1.setStyle({
+          fill: 'black',
+          fontSize: 40,
+          textAlign: 'center',
+          maxWidth: 180
+        })
+
+        fore.addText(text1);
+
+        var text2 = new EC.Text('Hello\nMulti<br>Line');
+        text2.setStyle({
+          fill: 'black',
+          lineHeight: 1.2,
+          fontSize: 30
+        });
+
+        text2.pos = [200, 300]
+
+        fore.addText(text2);
+
+        fore.render();
+
+      });
+
+      
+
+      
+      
+    </script>
+  </body>
 </html>
