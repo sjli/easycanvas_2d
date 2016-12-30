@@ -4,13 +4,30 @@ let frames = [];
 
 class Frame {
 
-  constructor(handler) {
+  constructor(handler, rate) {
     if (typeof handler !== 'function') {
       throw new Error('request handler must be a function');
     }
+    if (rate && !isNaN(rate)) {
+      this.fpsInterval = 1000 / rate;
+    }
     this.handler = () => {
-      handler();
       this.requestId = requestAnimationFrame(this.handler);
+      if (!this.fpsInterval) {
+        handler();
+      } else {
+
+        //throttle to a specific frame rate
+        let now = Date.now();
+
+        if (now - this.lastTime > this.fpsInterval) {
+          this.lastTime = now;
+          handler();
+        }
+
+      }
+      
+      
     };
     this.requestId = null;
     frames.push(this);
@@ -23,6 +40,7 @@ class Frame {
       }
       return;
     }
+    this.lastTime = Date.now();
     this.requestId = requestAnimationFrame(this.handler);
   }
 

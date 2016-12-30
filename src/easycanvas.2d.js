@@ -1,6 +1,7 @@
 import Scene from './core/Scene';
 import Geometry from './core/Geometry';
 import Text from './core/Text';
+import Sprite from './core/Sprite';
 import Frame from './core/Frame';
 
 var EasyCanvas = {
@@ -14,11 +15,13 @@ var EasyCanvas = {
 
   Text,
 
+  Sprite,
+
   Frame,
 
   assets: new Map,
 
-  init: (selector, urls = []) => {
+  init: (selector, assets = []) => {
     //init container
     const container = document.querySelector(selector);
     if (getComputedStyle(container).position === 'static') {
@@ -27,21 +30,21 @@ var EasyCanvas = {
     EasyCanvas.container = container;
 
     //load all assets
-    let loadUrls = urls.map((url, i) => {
+    let loadAssets = assets.map((asset, i) => {
       return new Promise((resolve, reject) => {
         let img = new Image;
         img.onload = () => {
-          EasyCanvas.assets.set(url, img);
+          EasyCanvas.assets.set(asset.name, img);
           resolve();
         };
         img.onerror = () => {
-          reject(img.src);
+          reject(asset.url);
         };
-        img.src = url;
+        img.src = asset.url;
       });
     });
 
-    return Promise.all(loadUrls);
+    return Promise.all(loadAssets);
   },
 
   addScene: () => {

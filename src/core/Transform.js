@@ -31,17 +31,18 @@ class Transform {
     props.forEach(prop => {
       if (excludes.indexOf(prop) > -1) {return;}
       self[prop] = (...args) => {
+        let ret;
         //transform origin
         if (self.__originChanged && regNoTrans.test(prop)) {
           self.__shadow.translateSelf(self.origin[0], self.origin[1]);
         }
-
-        self.__shadow[prop].apply(self.__shadow, args);
+        self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
 
         if (self.__originChanged && regNoTrans.test(prop)) {
           self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
         }
         cloneTransform(self.__shadow, self);
+        return ret;
       }
     });
 

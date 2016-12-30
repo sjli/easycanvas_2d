@@ -16,11 +16,14 @@
       <div id="app" class="app"></div>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
-        var urls = [
-          'images/pattern1.jpeg'
+        var assets = [
+          {
+            'name': 'pattern1',
+            'url': 'images/pattern1.jpeg'
+          }
         ];
 
-        EC.init('#app', urls).then(function() {
+        EC.init('#app', assets).then(function() {
 
           //初始化场景
           var scene = EC.addScene();
@@ -57,7 +60,7 @@
           gradient2.addColorStop(1, '#999');
 
           //定义贴图
-          var pattern1 = fore.context.createPattern(EC.assets.get(urls[0]), 'repeat');
+          var pattern1 = fore.context.createPattern(EC.assets.get('pattern1'), 'repeat');
 
           g1.setStyle({
             stroke: 'blue',

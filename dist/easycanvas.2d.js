@@ -58,6 +58,10 @@
 
 	var _Text2 = _interopRequireDefault(_Text);
 
+	var _Sprite = __webpack_require__(12);
+
+	var _Sprite2 = _interopRequireDefault(_Sprite);
+
 	var _Frame = __webpack_require__(11);
 
 	var _Frame2 = _interopRequireDefault(_Frame);
@@ -75,12 +79,14 @@
 
 	  Text: _Text2.default,
 
+	  Sprite: _Sprite2.default,
+
 	  Frame: _Frame2.default,
 
 	  assets: new Map(),
 
 	  init: function init(selector) {
-	    var urls = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+	    var assets = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
 	    //init container
 	    var container = document.querySelector(selector);
@@ -90,21 +96,21 @@
 	    EasyCanvas.container = container;
 
 	    //load all assets
-	    var loadUrls = urls.map(function (url, i) {
+	    var loadAssets = assets.map(function (asset, i) {
 	      return new Promise(function (resolve, reject) {
 	        var img = new Image();
 	        img.onload = function () {
-	          EasyCanvas.assets.set(url, img);
+	          EasyCanvas.assets.set(asset.name, img);
 	          resolve();
 	        };
 	        img.onerror = function () {
-	          reject(img.src);
+	          reject(asset.url);
 	        };
-	        img.src = url;
+	        img.src = asset.url;
 	      });
 	    });
 
-	    return Promise.all(loadUrls);
+	    return Promise.all(loadAssets);
 	  },
 
 	  addScene: function addScene() {
@@ -227,10 +233,29 @@
 	  _createClass(BackLayer, [{
 	    key: 'createBG',
 	    value: function createBG() {
-	      var bg = new _Geometry2.default();
-	      bg.path.rect(0, 0, this.canvas.width, this.canvas.height);
-	      this.addGeom(bg);
-	      return bg;
+	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+	          _ref$img = _ref.img,
+	          img = _ref$img === undefined ? null : _ref$img,
+	          _ref$fill = _ref.fill,
+	          fill = _ref$fill === undefined ? '' : _ref$fill;
+
+	      if (img) {
+	        return this.addImage({
+	          name: 'bg',
+	          img: img,
+	          dw: this.canvas.width,
+	          dh: this.canvas.height
+	        });
+	      } else if (fill) {
+	        console.log(fill);
+	        var bg = new _Geometry2.default();
+	        bg.path.rect(0, 0, this.canvas.width, this.canvas.height);
+	        this.addGeom(bg);
+	        bg.setStyle({
+	          fill: fill
+	        });
+	        return bg;
+	      }
 	    }
 	  }]);
 
@@ -268,6 +293,7 @@
 	    this.context = this.canvas.getContext('2d');
 	    this.geoms = new Map();
 	    this.texts = [];
+	    this.images = new Map();
 	  }
 
 	  _createClass(Layer, [{
@@ -306,6 +332,66 @@
 	      }
 
 	      this.texts = this.texts.concat(texts);
+	    }
+	  }, {
+	    key: 'addImage',
+	    value: function addImage(_ref) {
+	      var _ref$name = _ref.name,
+	          name = _ref$name === undefined ? '' : _ref$name,
+	          _ref$img = _ref.img,
+	          img = _ref$img === undefined ? null : _ref$img,
+	          _ref$sx = _ref.sx,
+	          sx = _ref$sx === undefined ? 0 : _ref$sx,
+	          _ref$sy = _ref.sy,
+	          sy = _ref$sy === undefined ? 0 : _ref$sy,
+	          _ref$sw = _ref.sw,
+	          sw = _ref$sw === undefined ? 0 : _ref$sw,
+	          _ref$sh = _ref.sh,
+	          sh = _ref$sh === undefined ? 0 : _ref$sh,
+	          _ref$dx = _ref.dx,
+	          dx = _ref$dx === undefined ? 0 : _ref$dx,
+	          _ref$dy = _ref.dy,
+	          dy = _ref$dy === undefined ? 0 : _ref$dy,
+	          _ref$dw = _ref.dw,
+	          dw = _ref$dw === undefined ? 0 : _ref$dw,
+	          _ref$dh = _ref.dh,
+	          dh = _ref$dh === undefined ? 0 : _ref$dh,
+	          _ref$transform = _ref.transform,
+	          transform = _ref$transform === undefined ? null : _ref$transform;
+
+	      if (!name || !img) {
+	        return console.error('name: ' + name, 'img: ' + img, 'is required');
+	      }
+	      var val = void 0;
+	      sw = sw || img.width - sx;
+	      sh = sh || img.height - sh;
+	      dw = dw || sw;
+	      dh = dh || sh;
+	      val = { img: img, sx: sx, sy: sy, sw: sw, sh: sh, dx: dx, dy: dy, dw: dw, dh: dh, transform: transform };
+
+	      this.images.set(name, val);
+	      return val;
+	    }
+	  }, {
+	    key: 'addSprite',
+	    value: function addSprite(_ref2) {
+	      var _ref2$sprite = _ref2.sprite,
+	          sprite = _ref2$sprite === undefined ? null : _ref2$sprite,
+	          _ref2$dx = _ref2.dx,
+	          dx = _ref2$dx === undefined ? 0 : _ref2$dx,
+	          _ref2$dy = _ref2.dy,
+	          dy = _ref2$dy === undefined ? 0 : _ref2$dy;
+
+	      if (!sprite) {
+	        return console.error('no sprite to be added');
+	      }
+	      this.addImage({
+	        name: sprite.name,
+	        img: sprite.canvas,
+	        transform: sprite.transform,
+	        dx: dx,
+	        dy: dy
+	      });
 	    }
 
 	    //make line 1px
@@ -351,6 +437,7 @@
 	      }
 	      this.renderGeoms();
 	      this.renderTexts();
+	      this.renderImages();
 	    }
 	  }, {
 	    key: 'renderGeoms',
@@ -447,13 +534,36 @@
 	        _this3.context.restore();
 	      });
 	    }
+	  }, {
+	    key: 'renderImages',
+	    value: function renderImages() {
+	      var _this4 = this;
+
+	      for (var _len4 = arguments.length, images = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+	        images[_key4] = arguments[_key4];
+	      }
+
+	      if (!images.length) {
+	        images = this.images;
+	      }
+
+	      images.forEach(function (image) {
+	        var values = Object.values(image);
+	        _this4.context.save();
+	        if (image.transform) {
+	          _this4.context.currentTransform = _this4.context.currentTransform.multiply(image.transform);
+	        }
+	        _this4.context.drawImage.apply(_this4.context, values);
+	        _this4.context.restore();
+	      });
+	    }
 
 	    //user events
 
 	  }, {
 	    key: 'on',
 	    value: function on(type, handler) {
-	      var _this4 = this;
+	      var _this5 = this;
 
 	      if (type === 'drag') {
 	        var _ret = function () {
@@ -466,7 +576,7 @@
 	              ex = void 0,
 	              ey = void 0;
 	          startType.forEach(function (type) {
-	            _this4.canvas.addEventListener(type, function (e) {
+	            _this5.canvas.addEventListener(type, function (e) {
 	              targetId = e.region;
 	              sx = e.clientX;
 	              sy = e.clientY;
@@ -474,13 +584,13 @@
 	          });
 
 	          endType.forEach(function (type) {
-	            _this4.canvas.addEventListener(type, function (e) {
+	            _this5.canvas.addEventListener(type, function (e) {
 	              targetId = null;
 	            });
 	          });
 
 	          moveType.forEach(function (type) {
-	            _this4.canvas.addEventListener(type, function (e) {
+	            _this5.canvas.addEventListener(type, function (e) {
 	              if (targetId) {
 	                ex = e.clientX;
 	                ey = e.clientY;
@@ -606,6 +716,24 @@
 	      this.event.emit('styleUpdate');
 	    }
 	  }, {
+	    key: 'updatePos',
+	    value: function updatePos() {
+	      this.motion.update();
+	      var pos = [this.motion.pos[0], this.motion.pos[1]];
+	      var _transform = this.transform,
+	          e = _transform.e,
+	          f = _transform.f;
+
+	      this.transform.multiplySelf({
+	        a: 1,
+	        b: 0,
+	        c: 0,
+	        d: 1,
+	        e: pos[0] - e,
+	        f: pos[1] - f
+	      });
+	    }
+	  }, {
 	    key: 'scale',
 	    value: function scale() {
 	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -633,24 +761,6 @@
 	    key: 'transformOrigin',
 	    value: function transformOrigin(x, y) {
 	      this.transform.setOrigin(x, y);
-	    }
-	  }, {
-	    key: 'updatePos',
-	    value: function updatePos() {
-	      this.motion.update();
-	      var pos = [this.motion.pos[0], this.motion.pos[1]];
-	      var _transform = this.transform,
-	          e = _transform.e,
-	          f = _transform.f;
-
-	      this.transform.multiplySelf({
-	        a: 1,
-	        b: 0,
-	        c: 0,
-	        d: 1,
-	        e: pos[0] - e,
-	        f: pos[1] - f
-	      });
 	    }
 	  }, {
 	    key: 'pos',
@@ -735,17 +845,18 @@
 	        args[_key] = arguments[_key];
 	      }
 
+	      var ret = void 0;
 	      //transform origin
 	      if (self.__originChanged && regNoTrans.test(prop)) {
 	        self.__shadow.translateSelf(self.origin[0], self.origin[1]);
 	      }
-
-	      self.__shadow[prop].apply(self.__shadow, args);
+	      self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
 
 	      if (self.__originChanged && regNoTrans.test(prop)) {
 	        self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
 	      }
 	      cloneTransform(self.__shadow, self);
+	      return ret;
 	    };
 	  });
 
@@ -1192,7 +1303,7 @@
 	var frames = [];
 
 	var Frame = function () {
-	  function Frame(handler) {
+	  function Frame(handler, rate) {
 	    var _this = this;
 
 	    _classCallCheck(this, Frame);
@@ -1200,9 +1311,23 @@
 	    if (typeof handler !== 'function') {
 	      throw new Error('request handler must be a function');
 	    }
+	    if (rate && !isNaN(rate)) {
+	      this.fpsInterval = 1000 / rate;
+	    }
 	    this.handler = function () {
-	      handler();
 	      _this.requestId = requestAnimationFrame(_this.handler);
+	      if (!_this.fpsInterval) {
+	        handler();
+	      } else {
+
+	        //throttle to a specific frame rate
+	        var now = Date.now();
+
+	        if (now - _this.lastTime > _this.fpsInterval) {
+	          _this.lastTime = now;
+	          handler();
+	        }
+	      }
 	    };
 	    this.requestId = null;
 	    frames.push(this);
@@ -1217,6 +1342,7 @@
 	        }
 	        return;
 	      }
+	      this.lastTime = Date.now();
 	      this.requestId = requestAnimationFrame(this.handler);
 	    }
 	  }, {
@@ -1251,6 +1377,194 @@
 	}();
 
 	exports.default = Frame;
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _Transform = __webpack_require__(5);
+
+	var _Transform2 = _interopRequireDefault(_Transform);
+
+	var _Motion = __webpack_require__(6);
+
+	var _Motion2 = _interopRequireDefault(_Motion);
+
+	var _Frame = __webpack_require__(11);
+
+	var _Frame2 = _interopRequireDefault(_Frame);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var spriteIndex = 0;
+
+	var Sprite = function () {
+	  function Sprite() {
+	    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+	        _ref$name = _ref.name,
+	        name = _ref$name === undefined ? '' : _ref$name,
+	        _ref$img = _ref.img,
+	        img = _ref$img === undefined ? null : _ref$img,
+	        _ref$width = _ref.width,
+	        width = _ref$width === undefined ? 0 : _ref$width,
+	        _ref$height = _ref.height,
+	        height = _ref$height === undefined ? 0 : _ref$height,
+	        _ref$cols = _ref.cols,
+	        cols = _ref$cols === undefined ? 1 : _ref$cols,
+	        _ref$rows = _ref.rows,
+	        rows = _ref$rows === undefined ? 1 : _ref$rows,
+	        _ref$frameRate = _ref.frameRate,
+	        frameRate = _ref$frameRate === undefined ? 60 : _ref$frameRate,
+	        _ref$autoStart = _ref.autoStart,
+	        autoStart = _ref$autoStart === undefined ? true : _ref$autoStart;
+
+	    _classCallCheck(this, Sprite);
+
+	    if (!img) {
+	      return;
+	    }
+
+	    this.width = width || img.width / cols >> 0;
+	    this.height = height || img.height / rows >> 0;
+
+	    if (!this.width || !this.height) {
+	      return;
+	    }
+
+	    this.id = '__sprite__' + spriteIndex++;
+	    this.name = name || this.id;
+	    this.index = 0;
+	    this.img = img;
+	    this.cols = cols;
+	    this.rows = rows;
+	    this.frames = cols * rows;
+	    this.frameRate = frameRate;
+
+	    //use unique canvas for better performance
+	    this.canvas = document.createElement('canvas');
+	    this.context = this.canvas.getContext('2d');
+	    this.canvas.width = this.width;
+	    this.canvas.height = this.height;
+	    this.transform = new _Transform2.default();
+	    this.motion = new _Motion2.default();
+	    this.frame = new _Frame2.default(this.update.bind(this), this.frameRate);
+	    if (autoStart) {
+	      this.frame.start();
+	    }
+	  }
+
+	  _createClass(Sprite, [{
+	    key: 'render',
+	    value: function render() {
+	      var row = this.index / this.rows >> 0;
+	      var col = this.index % this.cols;
+	      this.canvas.width = this.canvas.width; //clear canvas
+	      this.context.drawImage(this.img, col * this.width, 0, this.width, this.height, 0, 0, this.width, this.height);
+	    }
+	  }, {
+	    key: 'update',
+	    value: function update() {
+	      this.index = (this.index + 1) % this.frames;
+	      this.render();
+	    }
+	  }, {
+	    key: 'updatePos',
+	    value: function updatePos() {
+	      this.motion.update();
+	      var pos = [this.motion.pos[0], this.motion.pos[1]];
+	      var _transform = this.transform,
+	          e = _transform.e,
+	          f = _transform.f;
+
+	      this.transform.multiplySelf({
+	        a: 1,
+	        b: 0,
+	        c: 0,
+	        d: 1,
+	        e: pos[0] - e,
+	        f: pos[1] - f
+	      });
+	    }
+	  }, {
+	    key: 'scale',
+	    value: function scale() {
+	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	        args[_key] = arguments[_key];
+	      }
+
+	      this.transform.scaleSelf.apply(this.transform, args);
+	    }
+	  }, {
+	    key: 'rotate',
+	    value: function rotate() {
+	      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	        args[_key2] = arguments[_key2];
+	      }
+
+	      this.transform.rotateSelf.apply(this.transform, args);
+	    }
+	  }, {
+	    key: 'translate',
+	    value: function translate(dx, dy) {
+	      var pos = this.pos;
+	      this.pos = [pos[0] + dx, pos[1] + dy];
+	    }
+	  }, {
+	    key: 'flipX',
+	    value: function flipX() {
+	      this.transform.flipX();
+	    }
+	  }, {
+	    key: 'transformOrigin',
+	    value: function transformOrigin(x, y) {
+	      this.transform.setOrigin(x, y);
+	    }
+	  }, {
+	    key: 'pos',
+	    get: function get() {
+	      return this.motion.pos;
+	    },
+	    set: function set() {
+	      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
+	          _ref3 = _slicedToArray(_ref2, 2),
+	          x = _ref3[0],
+	          y = _ref3[1];
+
+	      var pos = this.motion.pos;
+	      var dx = x - pos[0];
+	      var dy = y - pos[1];
+	      if (dx === 0 && dy === 0) {
+	        return;
+	      }
+	      this.motion.pos[0] = x;
+	      this.motion.pos[1] = y;
+	      this.transform.multiplySelf({
+	        a: 1,
+	        b: 0,
+	        c: 0,
+	        d: 1,
+	        e: dx,
+	        f: dy
+	      });
+	    }
+	  }]);
+
+	  return Sprite;
+	}();
+
+	exports.default = Sprite;
 
 /***/ }
 /******/ ]);

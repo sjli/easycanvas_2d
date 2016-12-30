@@ -8,6 +8,7 @@ class Layer {
     this.context = this.canvas.getContext('2d');
     this.geoms = new Map;
     this.texts = [];
+    this.images = new Map;
   }
 
   mount(container) {
@@ -37,6 +38,50 @@ class Layer {
 
   addText(...texts) {
     this.texts = this.texts.concat(texts);
+  }
+
+  addImage({
+    name = '',
+    img = null,
+    sx = 0,
+    sy = 0,
+    sw = 0,
+    sh = 0,
+    dx = 0,
+    dy = 0,
+    dw = 0,
+    dh = 0,
+    transform = null
+  }) {
+    if (!name || !img) {
+      return console.error('name: ' + name, 'img: ' + img, 'is required');
+    }
+    let val;
+    sw = sw || img.width - sx;
+    sh = sh || img.height - sh;
+    dw = dw || sw;
+    dh = dh || sh;
+    val = {img, sx, sy, sw, sh, dx, dy, dw, dh, transform};
+
+    this.images.set(name, val);
+    return val;
+  }
+
+  addSprite({
+    sprite = null,
+    dx = 0,
+    dy = 0
+  }) {
+    if (!sprite) {
+      return console.error('no sprite to be added');
+    }
+    this.addImage({
+      name: sprite.name,
+      img: sprite.canvas,
+      transform: sprite.transform,
+      dx,
+      dy
+    });
   }
 
   //make line 1px
@@ -72,6 +117,7 @@ class Layer {
     }
     this.renderGeoms();
     this.renderTexts();
+    this.renderImages();
   }
 
   renderGeoms(...geoms) {
@@ -120,7 +166,7 @@ class Layer {
       texts = this.texts;
     }
 
-    texts.forEach((text) => {
+    texts.forEach(text => {
       this.context.save();
 
       this.context.currentTransform = this.context.currentTransform.multiply(text.transform);
@@ -152,6 +198,22 @@ class Layer {
         }
       });
 
+      this.context.restore();
+    });
+  }
+
+  renderImages(...images) {
+    if (!images.length) {
+      images = this.images;
+    }
+
+    images.forEach(image => {
+      let values = Object.values(image);
+      this.context.save();
+      if (image.transform) {
+        this.context.currentTransform = this.context.currentTransform.multiply(image.transform);
+      }
+      this.context.drawImage.apply(this.context, values);
       this.context.restore();
     });
   }

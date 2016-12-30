@@ -29,27 +29,6 @@ class Geometry {
     })
   }
 
-  get pos() {
-    return this.motion.pos;
-  }
-
-  set pos([x, y] = [0, 0]) {
-    let pos = this.motion.pos;
-    let dx = x - pos[0];
-    let dy = y - pos[1];
-    if (dx === 0 && dy === 0) {return;}
-    this.motion.pos[0] = x;
-    this.motion.pos[1] = y;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: dx,
-      f: dy
-    });
-  }
-
   setStyle({
     stroke = '',
     fill = '',
@@ -82,6 +61,41 @@ class Geometry {
     this.event.emit('styleUpdate');
   }
 
+  get pos() {
+    return this.motion.pos;
+  }
+
+  set pos([x, y] = [0, 0]) {
+    let pos = this.motion.pos;
+    let dx = x - pos[0];
+    let dy = y - pos[1];
+    if (dx === 0 && dy === 0) {return;}
+    this.motion.pos[0] = x;
+    this.motion.pos[1] = y;
+    this.transform.multiplySelf({
+      a: 1,
+      b: 0,
+      c: 0,
+      d: 1,
+      e: dx,
+      f: dy
+    });
+  }
+
+  updatePos() {
+    this.motion.update();
+    let pos = [this.motion.pos[0], this.motion.pos[1]];
+    let {e, f} = this.transform;
+    this.transform.multiplySelf({
+      a: 1,
+      b: 0,
+      c: 0,
+      d: 1,
+      e: pos[0] - e,
+      f: pos[1] - f
+    });
+  }
+
   scale(...args) {
     this.transform.scaleSelf.apply(this.transform, args);
   }
@@ -97,20 +111,6 @@ class Geometry {
 
   transformOrigin(x, y) {
     this.transform.setOrigin(x, y);
-  }
-
-  updatePos() {
-    this.motion.update();
-    let pos = [this.motion.pos[0], this.motion.pos[1]];
-    let {e, f} = this.transform;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: pos[0] - e,
-      f: pos[1] - f
-    });
   }
 
 }
