@@ -15,7 +15,6 @@ class BackLayer extends Layer {
         dh: this.canvas.height
       });
     } else if (fill) {
-      console.log(fill)
       var bg = new Geometry;
       bg.path.rect(0, 0, this.canvas.width, this.canvas.height);
       this.addGeom(bg);

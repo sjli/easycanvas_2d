@@ -11,16 +11,22 @@
             height: 100%;
             margin: 0;
           }
+          #tip {
+            position: absolute;
+            bottom: 10px;
+            right: 100px;
+          }
         </style>
     </head>
     <body>
       <div id="app" class="app"></div>
+      <p id="tip">Tip: Click Zombie!</p>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
         var assets = [
           {
             'name': 'multi',
-            'url': 'images/sprite-multiline.jpg'
+            'url': 'images/sprite-multiline.png'
           },
           {
             'name': 'single',
@@ -49,43 +55,69 @@
           back.render();
           
           var sprite0 = new EC.Sprite({
+            name: 'zombie',
             img: img0,
             cols: 10,
             frameRate: 10
-          });
-
-          var sprite1 = new EC.Sprite({
-            img: img1,
-            cols: 6,
-            rows: 4,
-            frameRate: 12
           });
 
           fore.addSprite({
             sprite: sprite0
           });
 
-          fore.addSprite({
-            sprite: sprite1,
-            dx: 200
-          });
-          sprite0.pos = [150, 400];
+          
+          sprite0.pos = [400, 300];
           sprite0.flipX();
           
           sprite0.scale(0.5, 0.5);
-          sprite1.scale(0.5, 0.5);
+          //sprite1.scale(0.5, 0.5);
 
           sprite0.motion.setVel([
-            -1,
+            -5,
             0
           ]);
-
+          
           var ani = new EC.Frame(function() {
+            //zombie walk
+            if (sprite0.pos[0] <= scene.width + sprite0.width / 2 && sprite0.pos[0] >= -sprite0.width / 2) {
+              sprite0.updatePos();
+            } else {
+              sprite0.flipX();
+              sprite0.updatePos();
+            }
             fore.clear();
             fore.render();
           });
 
           ani.start();
+          
+
+          fore.on('click', function(e) {
+            id = e.region;
+            if (id === 'zombie') {
+              fore.images.delete('zombie');
+              sprite0.frame.stop();
+              var sprite1 = new EC.Sprite({
+                name: 'boom',
+                img: img1,
+                cols: 4,
+                rows: 4,
+                frameRate: 12,
+                loop: 1,
+                width: sprite0.width,
+                height: sprite0.height
+              });
+
+              fore.addSprite({
+                sprite: sprite1
+              });
+              sprite1.transform.multiply(sprite0.transform);
+              sprite1.event.on('loopEnd', function() {
+                fore.images.delete('boom');
+              });
+            }
+
+          });
             
           //debug
           window.fore = fore; 

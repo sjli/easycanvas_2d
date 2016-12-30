@@ -1,19 +1,15 @@
-import Transform from './Transform'
-import Motion from './Motion'
-import Event from './Event'
+import ECObject from './ECObject'
 
 let geomIndex = 0;
 
-class Geometry {
+class Geometry extends ECObject {
 
   constructor() {
+    super();
     this.id = '__geom__' + geomIndex++;
-    this.event = new Event;
     this.path = new Path2D;
-    this.transform = new Transform;
-    this.motion = new Motion;
-    this.setStyle();
     this.children = [];
+    this.setStyle();
   }
 
   combine(geom) {
@@ -59,58 +55,6 @@ class Geometry {
       }
     });
     this.event.emit('styleUpdate');
-  }
-
-  get pos() {
-    return this.motion.pos;
-  }
-
-  set pos([x, y] = [0, 0]) {
-    let pos = this.motion.pos;
-    let dx = x - pos[0];
-    let dy = y - pos[1];
-    if (dx === 0 && dy === 0) {return;}
-    this.motion.pos[0] = x;
-    this.motion.pos[1] = y;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: dx,
-      f: dy
-    });
-  }
-
-  updatePos() {
-    this.motion.update();
-    let pos = [this.motion.pos[0], this.motion.pos[1]];
-    let {e, f} = this.transform;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: pos[0] - e,
-      f: pos[1] - f
-    });
-  }
-
-  scale(...args) {
-    this.transform.scaleSelf.apply(this.transform, args);
-  }
-
-  rotate(...args) {
-    this.transform.rotateSelf.apply(this.transform, args);
-  }
-
-  translate(dx, dy) {
-    var pos = this.pos;
-    this.pos = [pos[0] + dx, pos[1] + dy];
-  }
-
-  transformOrigin(x, y) {
-    this.transform.setOrigin(x, y);
   }
 
 }

@@ -1,15 +1,17 @@
-import Transform from './Transform'
+import ECObject from './ECObject'
 
 /*todos:
 line-height & auto line-break(after over maxWidth): there is a way to loop measuretext width, but performance?
 */
 
+let textIndex = 0;
 
-class Text {
+class Text extends ECObject {
 
   constructor(rawText = '') {
+    super();
+    this.id = '__text__' + textIndex++;
     this._rawText = rawText;
-    this.transform = new Transform;
     this.setStyle();
   }
 
@@ -41,26 +43,6 @@ class Text {
     var font = fontSize + 'px ' + fontFamily;
     this.style = {stroke, fill, shadowOffsetX, shadowOffsetY, shadowBlur, shadowColor,
                  filter, fontSize, fontFamily, font, lineHeight, textAlign, textBaseline, direction, maxWidth};
-  }
-
-  get pos() {    
-    return [
-      this.transform.e,
-      this.transform.f
-    ]
-  }
-
-  set pos([x, y] = [0, 0]) {
-    this.transform.e = x;
-    this.transform.f = y;
-  }
-
-  scale(sx, sy) {
-    this.transform.scaleSelf(sx, sy);
-  }
-
-  rotate(deg) {
-    this.transform.rotateSelf(deg);
   }
 
 }

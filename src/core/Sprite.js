@@ -1,10 +1,9 @@
-import Transform from './Transform'
-import Motion from './Motion'
+import ECObject from './ECObject'
 import Frame from './Frame'
 
 let spriteIndex = 0;
 
-class Sprite {
+class Sprite extends ECObject {
 
   constructor({
     name = '',
@@ -14,8 +13,10 @@ class Sprite {
     cols = 1,
     rows = 1,
     frameRate = 60,
-    autoStart = true
+    autoStart = true,
+    loop = Infinity
   } = {}) {
+    super();
     if (!img) {return;}
 
     this.width = width || img.width / cols >> 0;
@@ -31,14 +32,18 @@ class Sprite {
     this.rows = rows;
     this.frames = cols * rows;
     this.frameRate = frameRate;
+    this.loop = loop;
 
     //use unique canvas for better performance
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d');
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    this.transform = new Transform;
-    this.motion = new Motion;
+
+    //set transform origin center
+    this.transformOrigin(this.width / 2, this.height / 2);
+
+    //animate
     this.frame = new Frame(this.update.bind(this), this.frameRate);
     if (autoStart) {
       this.frame.start();
@@ -46,71 +51,29 @@ class Sprite {
   }
 
   render() {
-    let row = this.index / this.rows >> 0;
+    let row = this.index / this.cols >> 0;
     let col = this.index % this.cols;
+    let sw = this.img.width / this.cols;
+    let sh = this.img.height / this.rows;
     this.canvas.width = this.canvas.width; //clear canvas
-    this.context.drawImage(this.img, col * this.width, 0, this.width, this.height, 0, 0, this.width, this.height);
+    this.context.drawImage(this.img, 
+      col * sw, row * sh, sw, sh, 
+      0, 0, this.width, this.height
+    );
   }
 
   update() {
-    this.index = (this.index + 1) % this.frames;
+    if (this.loop !== Infinity && this.index === this.frames - 1) {
+      this.loop--;
+      if (this.loop <= 0) {
+        this.frame.stop();
+        this.event.emit('loopEnd');
+        return;
+      }
+    }
     this.render();
-  }
-
-  get pos() {
-    return this.motion.pos;
-  }
-
-  set pos([x, y] = [0, 0]) {
-    let pos = this.motion.pos;
-    let dx = x - pos[0];
-    let dy = y - pos[1];
-    if (dx === 0 && dy === 0) {return;}
-    this.motion.pos[0] = x;
-    this.motion.pos[1] = y;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: dx,
-      f: dy
-    });
-  }
-
-  updatePos() {
-    this.motion.update();
-    let pos = [this.motion.pos[0], this.motion.pos[1]];
-    let {e, f} = this.transform;
-    this.transform.multiplySelf({
-      a: 1,
-      b: 0,
-      c: 0,
-      d: 1,
-      e: pos[0] - e,
-      f: pos[1] - f
-    });
-  }
-
-  scale(...args) {
-    this.transform.scaleSelf.apply(this.transform, args);
-  }
-
-  rotate(...args) {
-    this.transform.rotateSelf.apply(this.transform, args);
-  }
-
-  translate(dx, dy) {
-    var pos = this.pos;
-    this.pos = [pos[0] + dx, pos[1] + dy];
-  }
-
-  flipX() {
-    this.transform.flipX();
-  }
-
-  transformOrigin(x, y) {
-    this.transform.setOrigin(x, y);
+    this.index = (this.index + 1) % this.frames;
+    this.event.emit('update');
   }
 
 }

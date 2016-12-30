@@ -57,11 +57,13 @@ class Layer {
       return console.error('name: ' + name, 'img: ' + img, 'is required');
     }
     let val;
+    let path = new Path2D;
     sw = sw || img.width - sx;
     sh = sh || img.height - sh;
     dw = dw || sw;
     dh = dh || sh;
-    val = {img, sx, sy, sw, sh, dx, dy, dw, dh, transform};
+    path.rect(dx, dy, dw, dh);
+    val = {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path, transform};
 
     this.images.set(name, val);
     return val;
@@ -208,12 +210,17 @@ class Layer {
     }
 
     images.forEach(image => {
-      let values = Object.values(image);
+      let {img, sx, sy, sw, sh, dx, dy, dw, dh} = image;
       this.context.save();
       if (image.transform) {
         this.context.currentTransform = this.context.currentTransform.multiply(image.transform);
       }
-      this.context.drawImage.apply(this.context, values);
+      //add hit region
+      this.context.addHitRegion({
+        path: image.path,
+        id: image.name
+      });
+      this.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
       this.context.restore();
     });
   }
