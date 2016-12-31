@@ -1,14 +1,60 @@
+
+import Transform from './Transform'
+import Event from './Event'
+
 class Layer {
 
   constructor(config = {
     showAxis: false
   }) {
     this.config = config;
+    this.event = new Event;
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d');
+    //polyfill for context.addHitRegion, only work for added objects
+    this.__polyfill_hitRegion();
     this.geoms = new Map;
     this.texts = [];
     this.images = new Map;
+  }
+
+  __polyfill_hitRegion() {
+
+    if (this.context.addHitRegion) {return;}
+    
+    this.__polyfill__regions = new Map;
+
+    let checkHandler = (e, handler) => {
+      let x = e.clientX, y = e.clientY;
+      let region, eventObj;
+      eventObj = Object.assign({}, e);
+      this.__polyfill__regions.forEach((regionObj) => {
+        let inPath = this.context.isPointInPath(regionObj.path, x, y);
+        if (inPath) {
+          eventObj.region = regionObj.id;
+        }
+      });
+      handler(eventObj);
+    }
+
+    this.context.addHitRegion = ({path, id, transform}) => {
+      if (!path || !id) {
+        return console.error('path: ' + path, 'and id: ' + id, 'are both required for polyfill hit region');
+      }
+      let checkPath = new Path2D;
+      checkPath.addPath(path, transform);
+      this.__polyfill__regions.set(id, {
+        id,
+        path: checkPath
+      });
+      this.event.on('checkHitRegion', checkHandler);
+    };
+
+    this.context.clearHitRegions = () => {
+      this.__polyfill__regions.clear();
+      this.event.remove('checkHitRegion', checkHandler);
+    };
+
   }
 
   mount(container) {
@@ -62,6 +108,7 @@ class Layer {
     sh = sh || img.height - sh;
     dw = dw || sw;
     dh = dh || sh;
+    transform = transform || new Transform;
     path.rect(dx, dy, dw, dh);
     val = {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path, transform};
 
@@ -106,10 +153,7 @@ class Layer {
   }
 
   clear() {
-    //just set size of canvas make context clear
-    var transform = this.context.currentTransform;
-    this.canvas.width = this.canvas.width;
-    this.context.currentTransform = transform;
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.context.clearHitRegions();
   }
 
@@ -131,13 +175,16 @@ class Layer {
     geoms.forEach(geom => {
 
       this.context.save();
+
+      let {a, b, c, d, e, f} = geom.transform;
       
-      this.context.currentTransform = this.context.currentTransform.multiply(geom.transform);
+      this.context.transform(a, b, c, d, e, f);
 
       //add hit region
       this.context.addHitRegion({
         path: geom.path,
-        id: geom.id
+        id: geom.id,
+        transform: geom.transform //for polyfill
       });
       
       
@@ -171,7 +218,9 @@ class Layer {
     texts.forEach(text => {
       this.context.save();
 
-      this.context.currentTransform = this.context.currentTransform.multiply(text.transform);
+      let {a, b, c, d, e, f} = text.transform;
+      
+      this.context.transform(a, b, c, d, e, f);
 
       let styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'font', 
       'textAlign', 'textBaseline', 'direction'];
@@ -213,12 +262,14 @@ class Layer {
       let {img, sx, sy, sw, sh, dx, dy, dw, dh} = image;
       this.context.save();
       if (image.transform) {
-        this.context.currentTransform = this.context.currentTransform.multiply(image.transform);
+        let {a, b, c, d, e, f} = image.transform;
+        this.context.transform(a, b, c, d, e, f);
       }
       //add hit region
       this.context.addHitRegion({
         path: image.path,
-        id: image.name
+        id: image.name,
+        transform: image.transform //for polyfill
       });
       this.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
       this.context.restore();
@@ -263,11 +314,20 @@ class Layer {
       
       return;
     }
-    this.canvas.addEventListener(type, handler);
+
+    let wrapHandler = (e) => {
+      if (!this.__polyfill__regions) {
+        return handler(e);
+      } else {
+        this.event.emit('checkHitRegion', e, handler);
+      }
+    }
+
+    this.canvas.addEventListener(type, wrapHandler);
   }
 
-  off(type, handler) {
-    this.canvas.removeEventListener(type, handler);
+  off(type) {
+    this.canvas.removeEventListener(type);
   }
 
 }

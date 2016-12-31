@@ -36,6 +36,9 @@ class Transform {
         if (self.__originChanged && regNoTrans.test(prop)) {
           self.__shadow.translateSelf(self.origin[0], self.origin[1]);
         }
+        if(args.length && args[0].__shadow) {
+          args[0] = args[0].__shadow; //method like multiply error when svgmatrix as arguments on firefox
+        }
         self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
 
         if (self.__originChanged && regNoTrans.test(prop)) {

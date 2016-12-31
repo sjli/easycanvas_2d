@@ -53,8 +53,8 @@ class Sprite extends ECObject {
   render() {
     let row = this.index / this.cols >> 0;
     let col = this.index % this.cols;
-    let sw = this.img.width / this.cols;
-    let sh = this.img.height / this.rows;
+    let sw = this.img.width / this.cols >> 0;
+    let sh = this.img.height / this.rows >> 0;
     this.canvas.width = this.canvas.width; //clear canvas
     this.context.drawImage(this.img, 
       col * sw, row * sh, sw, sh, 

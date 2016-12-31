@@ -90,7 +90,8 @@
           });
 
           ani.start();
-          
+          sprite0.render();
+          fore.render();
 
           fore.on('click', function(e) {
             id = e.region;
@@ -121,7 +122,7 @@
             
           //debug
           window.fore = fore; 
-          window.sprite0 = sprite0;
+          window.sprite0 = sprite0;//
           
           
         }, function(url) {
