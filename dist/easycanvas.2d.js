@@ -679,7 +679,13 @@
 	              ey = void 0;
 	          startType.forEach(function (type) {
 	            _this6.canvas.addEventListener(type, function (e) {
-	              targetId = e.region;
+	              if (!_this6.__polyfill__regions) {
+	                targetId = e.region;
+	              } else {
+	                _this6.event.emit('checkHitRegion', e, function (evt) {
+	                  targetId = evt.region;
+	                });
+	              }
 	              sx = e.clientX;
 	              sy = e.clientY;
 	            });
@@ -757,30 +763,75 @@
 
 	var regNoTrans = /((?!translate).{9}|^.{0,8})Self/;
 
+	var polyfillTransformSelfs = function polyfillTransformSelfs() {
+
+	  var proto = SVGMatrix.prototype;
+
+	  var selfProps = ["translate", "scale", "rotate", "skewX", "skewY", "flipX", "flipY"];
+
+	  selfProps.forEach(function (prop) {
+	    proto[prop + 'Self'] = function () {
+	      if (this.__originChanged && prop !== 'translate') {
+	        this.translateSelf(this.origin[0], this.origin[1]);
+	      }
+
+	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	        args[_key] = arguments[_key];
+	      }
+
+	      var origin = this[prop].apply(this, args);
+	      if (this.__originChanged && prop !== 'translate') {
+	        origin.translateSelf(-this.origin[0], -this.origin[1]);
+	      }
+	      cloneTransform(origin, this);
+	      return this;
+	    };
+	  });
+
+	  var originMultiply = proto.multiply;
+
+	  proto.multiply = function () {
+	    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	      args[_key2] = arguments[_key2];
+	    }
+
+	    var origin = originMultiply.apply(this, args);
+	    cloneTransform(origin, this);
+	    return this;
+	  };
+	};
+
 	var Transform = function Transform() {
 	  _classCallCheck(this, Transform);
 
 	  var self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
-	  //get/set from shadow matrix
-	  self.__shadow = new DOMMatrix();
-
-	  var props = Object.getOwnPropertyNames(SVGMatrix.prototype);
-	  var selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf", "scaleSelf", "scale3dSelf", "rotateSelf", "rotateFromVectorSelf", "rotateAxisAngleSelf", "skewXSelf", "skewYSelf", "invertSelf"];
-	  var excludes = ['constructor', 'a', 'b', 'c', 'd', 'e', 'f'];
-	  props = props.concat(selfProps);
 
 	  self.setOrigin = function (x, y) {
 	    self.__originChanged = true;
 	    self.origin = [x, y];
 	  };
 
+	  //safari not support DOMMatrix
+	  if (typeof DOMMatrix === 'undefined') {
+	    //polyfill dommatrix methods to svgmatrix
+	    polyfillTransformSelfs();
+	    return self;
+	  }
+	  //get/set from shadow matrix
+	  self.__shadow = new DOMMatrix();
+
+	  var props = Object.getOwnPropertyNames(SVGMatrix.prototype);
+	  var selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf", "scaleSelf", "scale3dSelf", "rotateSelf", "rotateFromVectorSelf", "rotateAxisAngleSelf", "skewXSelf", "skewYSelf", "invertSelf", "flipXSelf", "flipYSelf"];
+	  var excludes = ['constructor', 'a', 'b', 'c', 'd', 'e', 'f'];
+	  props = props.concat(selfProps);
+
 	  props.forEach(function (prop) {
 	    if (excludes.indexOf(prop) > -1) {
 	      return;
 	    }
 	    self[prop] = function () {
-	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-	        args[_key] = arguments[_key];
+	      for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+	        args[_key3] = arguments[_key3];
 	      }
 
 	      var ret = void 0;
@@ -790,6 +841,9 @@
 	      }
 	      if (args.length && args[0].__shadow) {
 	        args[0] = args[0].__shadow; //method like multiply error when svgmatrix as arguments on firefox
+	      }
+	      if (prop === "flipXSelf" || prop === "flipYSelf") {
+	        prop = prop.replace('Self', ''); //extend flipXSelf and flipYSelf
 	      }
 	      self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
 
@@ -1046,12 +1100,12 @@
 	  }, {
 	    key: 'flipX',
 	    value: function flipX() {
-	      this.transform.flipX();
+	      this.transform.flipXSelf();
 	    }
 	  }, {
 	    key: 'flipY',
 	    value: function flipY() {
-	      this.transform.flipY();
+	      this.transform.flipYSelf();
 	    }
 	  }, {
 	    key: 'transformOrigin',
@@ -1243,9 +1297,11 @@
 	    _this._lastTick = +new Date();
 	    _this._tick = 0;
 	    _this._fps = 60;
-	    _this._data = new Uint8Array(100).fill(60);
+	    _this._data = new Uint8Array(100);
 	    _this.box = new _Geometry2.default();
 	    _this.text = new _Text2.default();
+
+	    [].fill.call(_this._data, 60);
 	    _this.text.content = _this._fps + ' fps';
 	    _this.box.path.rect(0, 0, 100, 100);
 

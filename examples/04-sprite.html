@@ -70,7 +70,6 @@
           sprite0.flipX();
           
           sprite0.scale(0.5, 0.5);
-          //sprite1.scale(0.5, 0.5);
 
           sprite0.motion.setVel([
             -5,
@@ -108,7 +107,6 @@
                 width: sprite0.width,
                 height: sprite0.height
               });
-
               fore.addSprite({
                 sprite: sprite1
               });
@@ -127,6 +125,8 @@
           
         }, function(url) {
           console.log('资源加载失败', url);
+        }).catch(function(e) {
+          console.log(e);
         });
       </script>
     </body>

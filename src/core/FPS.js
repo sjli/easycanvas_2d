@@ -18,9 +18,11 @@ class FPS extends Layer {
     this._lastTick = +(new Date);
     this._tick = 0;
     this._fps = 60;
-    this._data = new Uint8Array(100).fill(60);
+    this._data = new Uint8Array(100);
     this.box = new Geometry;
     this.text = new Text;
+
+    [].fill.call(this._data, 60);
     this.text.content = this._fps + ' fps';
     this.box.path.rect(0, 0, 100, 100);
 

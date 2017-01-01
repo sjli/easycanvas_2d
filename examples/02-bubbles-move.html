@@ -75,7 +75,7 @@
 
           var update = function() {
 
-            fore.geoms.forEach(geom => {
+            fore.geoms.forEach(function(geom) {
               geom.updatePos();
               var pos = geom.pos;
               if (pos[0] < 0 || pos[0] > scene.width) {

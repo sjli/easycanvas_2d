@@ -42,11 +42,11 @@ class ECObject {
   }
 
   flipX() {
-    this.transform.flipX();
+    this.transform.flipXSelf();
   }
 
   flipY() {
-    this.transform.flipY();
+    this.transform.flipYSelf();
   }
 
   transformOrigin(x, y) {

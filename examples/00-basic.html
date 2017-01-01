@@ -22,11 +22,10 @@
             'url': 'images/pattern1.jpeg'
           }
         ];
-
         EC.init('#app', assets).then(function() {
-
           //初始化场景
           var scene = EC.addScene();
+
           var fore = scene.foreLayer;
           var back = scene.backLayer;
 
@@ -56,7 +55,7 @@
           gradient.addColorStop(0, "#fff");
           gradient.addColorStop(1, 'red');
           var gradient2 = back.context.createLinearGradient(0, 0, scene.width, scene.height);
-          gradient2.addColorStop(0, '#eeee');
+          gradient2.addColorStop(0, '#eee');
           gradient2.addColorStop(1, '#999');
 
           //定义贴图
@@ -98,6 +97,8 @@
           
         }, function(url) {
           console.log('资源加载失败', url);
+        }).catch(function(e){
+          console.log(e)
         });
       </script>
     </body>

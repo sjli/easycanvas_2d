@@ -286,7 +286,13 @@ class Layer {
       let sx, sy, ex, ey;
       startType.forEach(type => {
         this.canvas.addEventListener(type, e => {
-          targetId = e.region;
+          if (!this.__polyfill__regions) {
+            targetId = e.region;
+          } else {
+            this.event.emit('checkHitRegion', e, (evt) => {
+              targetId = evt.region;
+            });
+          }
           sx = e.clientX;
           sy = e.clientY;
         });
