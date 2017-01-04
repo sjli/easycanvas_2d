@@ -1,15 +1,17 @@
 //a polyfill for extending dommatrix fns to svgmatrix
 
 let cloneTransform = (origin, dist) => {
-  ['a', 'b', 'c', 'd', 'e', 'f'].forEach(v => {
-    dist[v] = origin[v];
-  });
+  dist.a = origin.a;
+  dist.b = origin.b;
+  dist.c = origin.c;
+  dist.d = origin.d;
+  dist.e = origin.e;
+  dist.f = origin.f;
 }
 
-let regNoTrans = /((?!translate).{9}|^.{0,8})Self/;
+let regTransOrigin = /(rotate|scale)Self/;
 
 let polyfillTransformSelfs = () => {
-  
   let proto = SVGMatrix.prototype;
 
   let selfProps = ["translate", "scale", "rotate",
@@ -17,11 +19,11 @@ let polyfillTransformSelfs = () => {
 
   selfProps.forEach(prop => {
     proto[prop + 'Self'] = function(...args) {
-      if (this.__originChanged && prop !== 'translate') {
+      if (this.__originChanged && /rotate|scale/.test(prop)) {
         this.translateSelf(this.origin[0], this.origin[1]);
       }
       let origin = this[prop].apply(this, args);
-      if (this.__originChanged && prop !== 'translate') {
+      if (this.__originChanged && /rotate|scale/.test(prop)) {
         origin.translateSelf(-this.origin[0], -this.origin[1]);
       }
       cloneTransform(origin, this);
@@ -36,7 +38,6 @@ let polyfillTransformSelfs = () => {
     cloneTransform(origin, this);
     return this;
   }
-
 }
 
 class Transform {
@@ -49,14 +50,16 @@ class Transform {
       self.origin = [x, y];
     }
 
-    //safari not support DOMMatrix
-    if (typeof DOMMatrix === 'undefined') {
+    //在性能测试方面svgmatrix与dommatrix没有显著的区别，更多的区别是在dommatrix多了一些封装的方法以及对于3d的支持
+    //且2dcontext只支持svgmatrix，因此此处只扩展封装部分self方法
+    //polyfill dommatrix methods to svgmatrix
+    //if (typeof DOMMatrix === 'undefined') {
       //polyfill dommatrix methods to svgmatrix
       polyfillTransformSelfs();
       return self;
-    }
+    //}
     //get/set from shadow matrix
-    self.__shadow = new DOMMatrix;
+    /*self.__shadow = new DOMMatrix;
 
     let props = Object.getOwnPropertyNames(SVGMatrix.prototype);
     let selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf",
@@ -71,7 +74,7 @@ class Transform {
       self[prop] = (...args) => {
         let ret;
         //transform origin
-        if (self.__originChanged && regNoTrans.test(prop)) {
+        if (self.__originChanged && regTransOrigin.test(prop)) {
           self.__shadow.translateSelf(self.origin[0], self.origin[1]);
         }
         if(args.length && args[0].__shadow) {
@@ -82,7 +85,7 @@ class Transform {
         }
         self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
 
-        if (self.__originChanged && regNoTrans.test(prop)) {
+        if (self.__originChanged && regTransOrigin.test(prop)) {
           self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
         }
         cloneTransform(self.__shadow, self);
@@ -90,7 +93,7 @@ class Transform {
       }
     });
 
-    return self;
+    return self;*/
   }
 
 }

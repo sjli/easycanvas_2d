@@ -44,11 +44,10 @@
           var scene = EC.addScene();
           var fore = scene.foreLayer;
           var back = scene.backLayer;
-
           var img0 = EC.assets.get('single');
           var img1 = EC.assets.get('multi');
           var imgFloor = EC.assets.get('floor');
-          var bg = back.createBG({
+          back.createBG({
             img: imgFloor
           });
 
@@ -61,12 +60,10 @@
             frameRate: 10
           });
 
-          fore.addSprite({
-            sprite: sprite0
-          });
+          fore.addImage(sprite0);
 
           
-          sprite0.pos = [400, 300];
+          sprite0.pos = [400, 350];
           sprite0.flipX();
           
           sprite0.scale(0.5, 0.5);
@@ -75,7 +72,7 @@
             -5,
             0
           ]);
-          
+          console.log(sprite0.transform)
           var ani = new EC.Frame(function() {
             //zombie walk
             if (sprite0.pos[0] <= scene.width + sprite0.width / 2 && sprite0.pos[0] >= -sprite0.width / 2) {
@@ -89,8 +86,6 @@
           });
 
           ani.start();
-          sprite0.render();
-          fore.render();
 
           fore.on('click', function(e) {
             id = e.region;
@@ -107,9 +102,7 @@
                 width: sprite0.width,
                 height: sprite0.height
               });
-              fore.addSprite({
-                sprite: sprite1
-              });
+              fore.addImage(sprite1);
               sprite1.transform.multiply(sprite0.transform);
               sprite1.event.on('loopEnd', function() {
                 fore.images.delete('boom');
@@ -120,7 +113,7 @@
             
           //debug
           window.fore = fore; 
-          window.sprite0 = sprite0;//
+          window.sprite0 = sprite0;
           
           
         }, function(url) {

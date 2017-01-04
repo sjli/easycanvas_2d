@@ -36,7 +36,6 @@ class Layer {
       });
       handler(eventObj);
     }
-
     this.context.addHitRegion = ({path, id, transform}) => {
       if (!path || !id) {
         return console.error('path: ' + path, 'and id: ' + id, 'are both required for polyfill hit region');
@@ -61,6 +60,8 @@ class Layer {
     container.appendChild(this.canvas);
     this.canvas.width = this.config.width || container.offsetWidth;
     this.canvas.height = this.config.width || container.offsetHeight;
+    this.width = this.canvas.width;
+    this.height = this.canvas.height;
     this.canvas.style.cssText = 'position: absolute; top: 0; left: 0';
     this.correctPixel();
     this.setCoordCenter();
@@ -86,51 +87,8 @@ class Layer {
     this.texts = this.texts.concat(texts);
   }
 
-  addImage({
-    name = '',
-    img = null,
-    sx = 0,
-    sy = 0,
-    sw = 0,
-    sh = 0,
-    dx = 0,
-    dy = 0,
-    dw = 0,
-    dh = 0,
-    transform = null
-  }) {
-    if (!name || !img) {
-      return console.error('name: ' + name, 'img: ' + img, 'is required');
-    }
-    let val;
-    let path = new Path2D;
-    sw = sw || img.width - sx;
-    sh = sh || img.height - sh;
-    dw = dw || sw;
-    dh = dh || sh;
-    transform = transform || new Transform;
-    path.rect(dx, dy, dw, dh);
-    val = {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path, transform};
-
-    this.images.set(name, val);
-    return val;
-  }
-
-  addSprite({
-    sprite = null,
-    dx = 0,
-    dy = 0
-  }) {
-    if (!sprite) {
-      return console.error('no sprite to be added');
-    }
-    this.addImage({
-      name: sprite.name,
-      img: sprite.canvas,
-      transform: sprite.transform,
-      dx,
-      dy
-    });
+  addImage(ecImage) {
+    this.images.set(ecImage.name, ecImage);
   }
 
   //make line 1px
@@ -153,7 +111,7 @@ class Layer {
   }
 
   clear() {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.clearRect(0, 0, this.width, this.height);
     this.context.clearHitRegions();
   }
 
@@ -177,12 +135,13 @@ class Layer {
       this.context.save();
 
       let {a, b, c, d, e, f} = geom.transform;
-      
+      let path = geom.path;
+
       this.context.transform(a, b, c, d, e, f);
 
       //add hit region
       this.context.addHitRegion({
-        path: geom.path,
+        path,
         id: geom.id,
         transform: geom.transform //for polyfill
       });
@@ -196,12 +155,12 @@ class Layer {
 
       if (stroke) {
         this.context.strokeStyle = stroke;
-        this.context.stroke(geom.path);
+        this.context.stroke(path);
       } 
 
       if (fill) {
         this.context.fillStyle = fill;
-        this.context.fill(geom.path);
+        this.context.fill(path);
       }
       
       this.context.restore();

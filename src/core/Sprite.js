@@ -1,9 +1,9 @@
-import ECObject from './ECObject'
+import ECImage from './ECImage'
 import Frame from './Frame'
 
 let spriteIndex = 0;
 
-class Sprite extends ECObject {
+class Sprite extends ECImage {
 
   constructor({
     name = '',
@@ -16,7 +16,7 @@ class Sprite extends ECObject {
     autoStart = true,
     loop = Infinity
   } = {}) {
-    super();
+    super({name, img});
     if (!img) {return;}
 
     this.width = width || img.width / cols >> 0;
@@ -27,7 +27,6 @@ class Sprite extends ECObject {
     this.id = '__sprite__' + spriteIndex++;
     this.name = name || this.id;
     this.index = 0;
-    this.img = img;
     this.cols = cols;
     this.rows = rows;
     this.frames = cols * rows;
@@ -39,10 +38,13 @@ class Sprite extends ECObject {
     this.context = this.canvas.getContext('2d');
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+    this.img = this.canvas;
+    this._img = img;
+    this.sw = this.dw = this.width;
+    this.sh = this.dh = this.height;
 
     //set transform origin center
     this.transformOrigin(this.width / 2, this.height / 2);
-
     //animate
     this.frame = new Frame(this.update.bind(this), this.frameRate);
     if (autoStart) {
@@ -53,10 +55,10 @@ class Sprite extends ECObject {
   render() {
     let row = this.index / this.cols >> 0;
     let col = this.index % this.cols;
-    let sw = this.img.width / this.cols >> 0;
-    let sh = this.img.height / this.rows >> 0;
-    this.canvas.width = this.canvas.width; //clear canvas
-    this.context.drawImage(this.img, 
+    let sw = this._img.width / this.cols >> 0;
+    let sh = this._img.height / this.rows >> 0;
+    this.context.clearRect(0, 0, this.width, this.height); //clear canvas
+    this.context.drawImage(this._img, 
       col * sw, row * sh, sw, sh, 
       0, 0, this.width, this.height
     );

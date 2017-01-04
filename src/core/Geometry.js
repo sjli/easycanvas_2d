@@ -1,5 +1,6 @@
 import ECObject from './ECObject'
 
+
 let geomIndex = 0;
 
 class Geometry extends ECObject {

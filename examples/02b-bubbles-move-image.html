@@ -26,33 +26,31 @@
       <button id="stop">stop move</button>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
-        EC.init('#app').then(function() {
+        var assets = [
+          {
+            'name': 'bubble',
+            'url': 'images/bubble.png'
+          }
+        ];
+        EC.init('#app', assets).then(function() {
           var scene = EC.addScene();
           var fore = scene.foreLayer;
           var back = scene.backLayer;
 
+          var bubbleCount = 0;
+
           function createBubble(x, y, r) {
-            var geom = new EC.Geometry;
-            fore.addGeom(geom);
+            var bubble = new EC.ECImage({
+              name: 'bubble_' + bubbleCount++,
+              img: EC.assets.get('bubble'),
+              dw: r,
+              dh: r
+            })
+            fore.addImage(bubble);
 
-            geom.path.arc(0, 0, r, 0, Math.PI * 2, false);
-            //safari and mobile browsers has very bad performance on rendering gradients
-            var gradient = fore.context.createRadialGradient(- r / 4 >> 0, - r / 4 >> 0, 0, -r / 8, -r / 8, r);
-            gradient.addColorStop(0, "rgba(240,245,255,0.9)");
-            gradient.addColorStop(.4, "rgba(240,245,255,0.9)");
-            gradient.addColorStop(.6, "rgba(225,238,255,0.8)");
-            gradient.addColorStop(1, "rgba(43,130,255,0.4)");
+            bubble.pos = [x, y];
 
-            geom.setStyle({
-              fill: gradient,
-              //fill: 'blue',
-              rules: {
-                //filter: 'grayscale(' + Math.random() + ')' //filter will largely lower render performance
-              }
-            });
-            geom.pos = [x, y];
-
-            geom.motion.setVel([
+            bubble.motion.setVel([
               Math.random()*5+.5,
               Math.random()*5+.5
             ]);
@@ -77,14 +75,14 @@
           
           var update = function() {
 
-            fore.geoms.forEach(function(geom) {
-              geom.updatePos();
-              var pos = geom.pos;
+            fore.images.forEach(function(image) {
+              image.updatePos();
+              var pos = image.pos;
               if (pos[0] < 0 || pos[0] > scene.width) {
-                geom.motion.vel[0] *= -1;
+                image.motion.vel[0] *= -1;
               }
               if (pos[1] < 0 || pos[1] > scene.height) {
-                geom.motion.vel[1] *= -1;
+                image.motion.vel[1] *= -1;
               }
             });
 
@@ -103,6 +101,8 @@
 
           document.querySelector('#stop').onclick = animate.stop.bind(animate, null);
           
+        }).catch(function(e) {
+          console.error(e);
         });
 
         

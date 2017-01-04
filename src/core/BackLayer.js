@@ -1,5 +1,6 @@
 import Layer from './Layer';
 import Geometry from './Geometry';
+import ECImage from './ECImage';
 
 class BackLayer extends Layer {
 
@@ -8,12 +9,13 @@ class BackLayer extends Layer {
     fill = ''
   } = {}) {
     if (img) {
-      return this.addImage({
-        name: 'bg', 
+      var ecImg = new ECImage({
+        name: 'bg',
         img,
         dw: this.canvas.width,
         dh: this.canvas.height
       });
+      this.addImage(ecImg);
     } else if (fill) {
       var bg = new Geometry;
       bg.path.rect(0, 0, this.canvas.width, this.canvas.height);
