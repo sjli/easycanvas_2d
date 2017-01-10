@@ -14,13 +14,14 @@ class ECImage extends ECObject {
     dx = 0,
     dy = 0,
     dw = sw,
-    dh = sh
+    dh = sh,
+    observable = false
   }) {
     super();
     this.id = '__image__' + imageIndex++;
     let path = new Path2D;
     path.rect(dx, dy, dw, dh);
-    Object.assign(this, {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path});
+    Object.assign(this, {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path, observable});
   }
 
 }

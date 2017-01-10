@@ -38,6 +38,13 @@ let polyfillTransformSelfs = () => {
     cloneTransform(origin, this);
     return this;
   }
+
+  //add setTransform 
+  proto.setTransform = function(a, b, c, d, e, f) {
+    let args = {a, b, c, d, e, f};
+    cloneTransform(args, this);
+    return this;
+  }
 }
 
 class Transform {

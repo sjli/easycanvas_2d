@@ -5,11 +5,14 @@ let geomIndex = 0;
 
 class Geometry extends ECObject {
 
-  constructor() {
+  constructor({
+    observable = false
+  } = {}) {
     super();
     this.id = '__geom__' + geomIndex++;
     this.path = new Path2D;
     this.children = [];
+    this.observable = observable;
     this.setStyle();
   }
 

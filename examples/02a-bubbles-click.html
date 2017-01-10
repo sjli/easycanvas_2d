@@ -39,7 +39,9 @@
           scene.showFPS();
 
           function createBubble(x, y, r) {
-            var geom = new EC.Geometry;
+            var geom = new EC.Geometry({
+              observable: true
+            });
 
             geom.path.arc(0, 0, r, 0, Math.PI * 2, false);
             var gradient = fore.context.createRadialGradient(- r / 4 >> 0, - r / 4 >> 0, 0, -r / 8, -r / 8, r);

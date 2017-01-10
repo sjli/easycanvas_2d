@@ -27,7 +27,9 @@
           var fore = scene.foreLayer;
 
           function createBubble(x, y, r) {
-            var geom = new EC.Geometry;
+            var geom = new EC.Geometry({
+              observable: true
+            });
             fore.addGeom(geom);
 
             geom.path.arc(0, 0, r, 0, Math.PI * 2, false);

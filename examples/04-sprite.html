@@ -57,7 +57,8 @@
             name: 'zombie',
             img: img0,
             cols: 10,
-            frameRate: 10
+            frameRate: 10,
+            observable: true
           });
 
           fore.addImage(sprite0);
@@ -72,7 +73,7 @@
             -5,
             0
           ]);
-          console.log(sprite0.transform)
+          
           var ani = new EC.Frame(function() {
             //zombie walk
             if (sprite0.pos[0] <= scene.width + sprite0.width / 2 && sprite0.pos[0] >= -sprite0.width / 2) {

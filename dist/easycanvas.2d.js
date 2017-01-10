@@ -320,6 +320,7 @@
 	    this.event = new _Event2.default();
 	    this.canvas = document.createElement('canvas');
 	    this.context = this.canvas.getContext('2d');
+	    this.__polyfill__transform();
 	    //polyfill for context.addHitRegion, only work for added objects
 	    this.__polyfill_hitRegion();
 	    this.geoms = new Map();
@@ -328,9 +329,84 @@
 	  }
 
 	  _createClass(Layer, [{
+	    key: '__polyfill__transform',
+	    value: function __polyfill__transform() {
+	      var _this = this;
+
+	      //mozCurrentTransform return array rather than svgmatrix
+	      var matrix = this.context.currentTransform;
+	      if (matrix) {
+	        return;
+	      }
+	      matrix = this.context.currentTransform = new _Transform2.default();
+
+	      var selfProps = ['rotate', 'scale', 'translate'];
+	      var originSetTransform = this.context.setTransform;
+	      var originTransform = this.context.transform;
+	      var originSave = this.context.save;
+	      var originRestore = this.context.restore;
+
+	      this.__transform__store = [];
+
+	      selfProps.forEach(function (prop) {
+	        var origin = _this.context[prop];
+	        _this.context[prop] = function () {
+	          for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	          }
+
+	          origin.apply(_this.context, args);
+	          matrix[prop + 'Self'].apply(_this.context.currentTransform, args);
+	        };
+	      });
+
+	      this.context.setTransform = function () {
+	        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	          args[_key2] = arguments[_key2];
+	        }
+
+	        originSetTransform.apply(_this.context, args);
+	        matrix.setTransform.apply(_this.context.currentTransform, args);
+	      };
+
+	      this.context.transform = function () {
+	        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+	          args[_key3] = arguments[_key3];
+	        }
+
+	        originTransform.apply(_this.context, args);
+	        var tempMatrix = new _Transform2.default();
+	        tempMatrix.setTransform.apply(tempMatrix, args);
+	        matrix.multiply(tempMatrix);
+	      };
+
+	      this.context.save = function () {
+	        originSave.apply(_this.context);
+	        var tempMatrix = new _Transform2.default();
+	        var _context$currentTrans = _this.context.currentTransform,
+	            a = _context$currentTrans.a,
+	            b = _context$currentTrans.b,
+	            c = _context$currentTrans.c,
+	            d = _context$currentTrans.d,
+	            e = _context$currentTrans.e,
+	            f = _context$currentTrans.f;
+
+	        tempMatrix.setTransform(a, b, c, d, e, f);
+	        _this.__transform__store.push(tempMatrix);
+	      };
+
+	      this.context.restore = function () {
+	        originRestore.apply(_this.context);
+	        var matrix = _this.__transform__store.pop();
+	        if (matrix) {
+	          _this.context.currentTransform = matrix;
+	        }
+	      };
+	    }
+	  }, {
 	    key: '__polyfill_hitRegion',
 	    value: function __polyfill_hitRegion() {
-	      var _this = this;
+	      var _this2 = this;
 
 	      if (this.context.addHitRegion) {
 	        return;
@@ -344,8 +420,8 @@
 	        var region = void 0,
 	            eventObj = void 0;
 	        eventObj = Object.assign({}, e);
-	        _this.__polyfill__regions.forEach(function (regionObj) {
-	          var inPath = _this.context.isPointInPath(regionObj.path, x, y);
+	        _this2.__polyfill__regions.forEach(function (regionObj) {
+	          var inPath = _this2.context.isPointInPath(regionObj.path, x, y);
 	          if (inPath) {
 	            eventObj.region = regionObj.id;
 	          }
@@ -362,16 +438,16 @@
 	        }
 	        var checkPath = new Path2D();
 	        checkPath.addPath(path, transform);
-	        _this.__polyfill__regions.set(id, {
+	        _this2.__polyfill__regions.set(id, {
 	          id: id,
 	          path: checkPath
 	        });
-	        _this.event.on('checkHitRegion', checkHandler);
+	        _this2.event.on('checkHitRegion', checkHandler);
 	      };
 
 	      this.context.clearHitRegions = function () {
-	        _this.__polyfill__regions.clear();
-	        _this.event.remove('checkHitRegion', checkHandler);
+	        _this2.__polyfill__regions.clear();
+	        _this2.event.remove('checkHitRegion', checkHandler);
 	      };
 	    }
 	  }, {
@@ -389,7 +465,7 @@
 	  }, {
 	    key: 'addGeom',
 	    value: function addGeom(geom) {
-	      var _this2 = this;
+	      var _this3 = this;
 
 	      this.geoms.set(geom.id, geom);
 
@@ -400,15 +476,15 @@
 
 	        geom.event.on('combined', function () {
 	          //remove when combine to other geometry
-	          _this2.geoms.delete(geom.id);
+	          _this3.geoms.delete(geom.id);
 	        });
 	      }
 	    }
 	  }, {
 	    key: 'addText',
 	    value: function addText() {
-	      for (var _len = arguments.length, texts = Array(_len), _key = 0; _key < _len; _key++) {
-	        texts[_key] = arguments[_key];
+	      for (var _len4 = arguments.length, texts = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+	        texts[_key4] = arguments[_key4];
 	      }
 
 	      this.texts = this.texts.concat(texts);
@@ -424,7 +500,8 @@
 	  }, {
 	    key: 'correctPixel',
 	    value: function correctPixel() {
-	      this.context.translate(.5, .5);
+	      this.__correctPixel = 0.5;
+	      this.context.setTransform(1, 0, 0, 1, this.__correctPixel, this.__correctPixel);
 	    }
 	  }, {
 	    key: 'setCoordCenter',
@@ -432,31 +509,25 @@
 	      var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
 	      var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
+	      var matrix = this.context.currentTransform;
+	      var e = matrix.e,
+	          f = matrix.f;
+
 	      this.coords = { x: x, y: y };
-	      this.context.translate(x, y);
-	    }
-	  }, {
-	    key: 'renderAxis',
-	    value: function renderAxis() {
-	      this.context.beginPath();
-	      this.context.moveTo(-this.coords.x, 0);
-	      this.context.lineTo(this.canvas.width - this.coords.x, 0);
-	      this.context.moveTo(0, -this.coords.y);
-	      this.context.lineTo(0, this.canvas.height - this.coords.y);
-	      this.context.stroke();
+	      this.context.translate(x - e + this.__correctPixel, y - f + this.__correctPixel);
 	    }
 	  }, {
 	    key: 'clear',
 	    value: function clear() {
+	      this.context.save();
+	      this.context.setTransform(1, 0, 0, 1, 0, 0);
 	      this.context.clearRect(0, 0, this.width, this.height);
+	      this.context.restore();
 	      this.context.clearHitRegions();
 	    }
 	  }, {
 	    key: 'render',
 	    value: function render() {
-	      if (this.config.showAxis) {
-	        this.renderAxis();
-	      }
 	      this.renderGeoms();
 	      this.renderTexts();
 	      this.renderImages();
@@ -464,10 +535,10 @@
 	  }, {
 	    key: 'renderGeoms',
 	    value: function renderGeoms() {
-	      var _this3 = this;
+	      var _this4 = this;
 
-	      for (var _len2 = arguments.length, geoms = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-	        geoms[_key2] = arguments[_key2];
+	      for (var _len5 = arguments.length, geoms = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+	        geoms[_key5] = arguments[_key5];
 	      }
 
 	      if (!geoms.length) {
@@ -476,7 +547,7 @@
 
 	      geoms.forEach(function (geom) {
 
-	        _this3.context.save();
+	        _this4.context.save();
 
 	        var _geom$transform = geom.transform,
 	            a = _geom$transform.a,
@@ -488,14 +559,16 @@
 
 	        var path = geom.path;
 
-	        _this3.context.transform(a, b, c, d, e, f);
+	        _this4.context.transform(a, b, c, d, e, f);
 
 	        //add hit region
-	        _this3.context.addHitRegion({
-	          path: path,
-	          id: geom.id,
-	          transform: geom.transform //for polyfill
-	        });
+	        if (geom.observable) {
+	          _this4.context.addHitRegion({
+	            path: path,
+	            id: geom.id,
+	            transform: geom.transform //for polyfill
+	          });
+	        }
 
 	        var _geom$style = geom.style,
 	            stroke = _geom$style.stroke,
@@ -504,29 +577,29 @@
 
 
 	        for (var rule in rules) {
-	          _this3.context[rule] = rules[rule];
+	          _this4.context[rule] = rules[rule];
 	        }
 
 	        if (stroke) {
-	          _this3.context.strokeStyle = stroke;
-	          _this3.context.stroke(path);
+	          _this4.context.strokeStyle = stroke;
+	          _this4.context.stroke(path);
 	        }
 
 	        if (fill) {
-	          _this3.context.fillStyle = fill;
-	          _this3.context.fill(path);
+	          _this4.context.fillStyle = fill;
+	          _this4.context.fill(path);
 	        }
 
-	        _this3.context.restore();
+	        _this4.context.restore();
 	      });
 	    }
 	  }, {
 	    key: 'renderTexts',
 	    value: function renderTexts() {
-	      var _this4 = this;
+	      var _this5 = this;
 
-	      for (var _len3 = arguments.length, texts = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-	        texts[_key3] = arguments[_key3];
+	      for (var _len6 = arguments.length, texts = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+	        texts[_key6] = arguments[_key6];
 	      }
 
 	      if (!texts.length) {
@@ -534,7 +607,7 @@
 	      }
 
 	      texts.forEach(function (text) {
-	        _this4.context.save();
+	        _this5.context.save();
 
 	        var _text$transform = text.transform,
 	            a = _text$transform.a,
@@ -545,13 +618,13 @@
 	            f = _text$transform.f;
 
 
-	        _this4.context.transform(a, b, c, d, e, f);
+	        _this5.context.transform(a, b, c, d, e, f);
 
 	        var styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'font', 'textAlign', 'textBaseline', 'direction'];
 
 	        styles.forEach(function (style) {
 	          if (text.style[style]) {
-	            _this4.context[style] = text.style[style];
+	            _this5.context[style] = text.style[style];
 	          }
 	        });
 
@@ -559,30 +632,30 @@
 	        text.content.forEach(function (content, i) {
 	          //emulate line-height 
 	          if (i > 0) {
-	            _this4.context.translate(0, text.style.fontSize * text.style.lineHeight);
+	            _this5.context.translate(0, text.style.fontSize * text.style.lineHeight);
 	          }
 
 	          if (text.style.stroke) {
-	            _this4.context.strokeStyle = text.style.stroke;
-	            _this4.context.strokeText(content, 0, 0, text.style.maxWidth);
+	            _this5.context.strokeStyle = text.style.stroke;
+	            _this5.context.strokeText(content, 0, 0, text.style.maxWidth);
 	          }
 
 	          if (text.style.fill) {
-	            _this4.context.fillStyle = text.style.fill;
-	            _this4.context.fillText(content, 0, 0, text.style.maxWidth);
+	            _this5.context.fillStyle = text.style.fill;
+	            _this5.context.fillText(content, 0, 0, text.style.maxWidth);
 	          }
 	        });
 
-	        _this4.context.restore();
+	        _this5.context.restore();
 	      });
 	    }
 	  }, {
 	    key: 'renderImages',
 	    value: function renderImages() {
-	      var _this5 = this;
+	      var _this6 = this;
 
-	      for (var _len4 = arguments.length, images = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-	        images[_key4] = arguments[_key4];
+	      for (var _len7 = arguments.length, images = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+	        images[_key7] = arguments[_key7];
 	      }
 
 	      if (!images.length) {
@@ -600,7 +673,7 @@
 	            dw = image.dw,
 	            dh = image.dh;
 
-	        _this5.context.save();
+	        _this6.context.save();
 	        if (image.transform) {
 	          var _image$transform = image.transform,
 	              a = _image$transform.a,
@@ -610,16 +683,19 @@
 	              e = _image$transform.e,
 	              f = _image$transform.f;
 
-	          _this5.context.transform(a, b, c, d, e, f);
+	          _this6.context.transform(a, b, c, d, e, f);
 	        }
 	        //add hit region
-	        _this5.context.addHitRegion({
-	          path: image.path,
-	          id: image.name,
-	          transform: image.transform //for polyfill
-	        });
-	        _this5.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-	        _this5.context.restore();
+	        if (image.observable) {
+	          _this6.context.addHitRegion({
+	            path: image.path,
+	            id: image.name,
+	            transform: image.transform //for polyfill
+	          });
+	        }
+
+	        _this6.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+	        _this6.context.restore();
 	      });
 	    }
 
@@ -628,7 +704,7 @@
 	  }, {
 	    key: 'on',
 	    value: function on(type, handler) {
-	      var _this6 = this;
+	      var _this7 = this;
 
 	      if (type === 'drag') {
 	        var _ret = function () {
@@ -641,11 +717,11 @@
 	              ex = void 0,
 	              ey = void 0;
 	          startType.forEach(function (type) {
-	            _this6.canvas.addEventListener(type, function (e) {
-	              if (!_this6.__polyfill__regions) {
+	            _this7.canvas.addEventListener(type, function (e) {
+	              if (!_this7.__polyfill__regions) {
 	                targetId = e.region;
 	              } else {
-	                _this6.event.emit('checkHitRegion', e, function (evt) {
+	                _this7.event.emit('checkHitRegion', e, function (evt) {
 	                  targetId = evt.region;
 	                });
 	              }
@@ -655,13 +731,13 @@
 	          });
 
 	          endType.forEach(function (type) {
-	            _this6.canvas.addEventListener(type, function (e) {
+	            _this7.canvas.addEventListener(type, function (e) {
 	              targetId = null;
 	            });
 	          });
 
 	          moveType.forEach(function (type) {
-	            _this6.canvas.addEventListener(type, function (e) {
+	            _this7.canvas.addEventListener(type, function (e) {
 	              if (targetId) {
 	                ex = e.clientX;
 	                ey = e.clientY;
@@ -683,10 +759,10 @@
 	      }
 
 	      var wrapHandler = function wrapHandler(e) {
-	        if (!_this6.__polyfill__regions) {
+	        if (!_this7.__polyfill__regions) {
 	          return handler(e);
 	        } else {
-	          _this6.event.emit('checkHitRegion', e, handler);
+	          _this7.event.emit('checkHitRegion', e, handler);
 	        }
 	      };
 
@@ -762,6 +838,13 @@
 
 	    var origin = originMultiply.apply(this, args);
 	    cloneTransform(origin, this);
+	    return this;
+	  };
+
+	  //add setTransform 
+	  proto.setTransform = function (a, b, c, d, e, f) {
+	    var args = { a: a, b: b, c: c, d: d, e: e, f: f };
+	    cloneTransform(args, this);
 	    return this;
 	  };
 	};
@@ -917,6 +1000,10 @@
 	  _inherits(Geometry, _ECObject);
 
 	  function Geometry() {
+	    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+	        _ref$observable = _ref.observable,
+	        observable = _ref$observable === undefined ? false : _ref$observable;
+
 	    _classCallCheck(this, Geometry);
 
 	    var _this = _possibleConstructorReturn(this, (Geometry.__proto__ || Object.getPrototypeOf(Geometry)).call(this));
@@ -924,6 +1011,7 @@
 	    _this.id = '__geom__' + geomIndex++;
 	    _this.path = new Path2D();
 	    _this.children = [];
+	    _this.observable = observable;
 	    _this.setStyle();
 	    return _this;
 	  }
@@ -950,13 +1038,13 @@
 	    value: function setStyle() {
 	      var _this3 = this;
 
-	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	          _ref$stroke = _ref.stroke,
-	          stroke = _ref$stroke === undefined ? '' : _ref$stroke,
-	          _ref$fill = _ref.fill,
-	          fill = _ref$fill === undefined ? '' : _ref$fill,
-	          _ref$rules = _ref.rules,
-	          rules = _ref$rules === undefined ? {} : _ref$rules;
+	      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+	          _ref2$stroke = _ref2.stroke,
+	          stroke = _ref2$stroke === undefined ? '' : _ref2$stroke,
+	          _ref2$fill = _ref2.fill,
+	          fill = _ref2$fill === undefined ? '' : _ref2$fill,
+	          _ref2$rules = _ref2.rules,
+	          rules = _ref2$rules === undefined ? {} : _ref2$rules;
 
 	      var keys = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', //Warning: filter will obviously lower performance
 	      'lineWidth', 'lineCap', 'lineJoin', 'miterLimit', 'globalAlpha'];
@@ -1211,7 +1299,9 @@
 	        _ref$dw = _ref.dw,
 	        dw = _ref$dw === undefined ? sw : _ref$dw,
 	        _ref$dh = _ref.dh,
-	        dh = _ref$dh === undefined ? sh : _ref$dh;
+	        dh = _ref$dh === undefined ? sh : _ref$dh,
+	        _ref$observable = _ref.observable,
+	        observable = _ref$observable === undefined ? false : _ref$observable;
 
 	    _classCallCheck(this, ECImage);
 
@@ -1220,7 +1310,7 @@
 	    _this.id = '__image__' + imageIndex++;
 	    var path = new Path2D();
 	    path.rect(dx, dy, dw, dh);
-	    Object.assign(_this, { name: name, img: img, sx: sx, sy: sy, sw: sw, sh: sh, dx: dx, dy: dy, dw: dw, dh: dh, path: path });
+	    Object.assign(_this, { name: name, img: img, sx: sx, sy: sy, sw: sw, sh: sh, dx: dx, dy: dy, dw: dw, dh: dh, path: path, observable: observable });
 	    return _this;
 	  }
 
@@ -1648,11 +1738,13 @@
 	        _ref$autoStart = _ref.autoStart,
 	        autoStart = _ref$autoStart === undefined ? true : _ref$autoStart,
 	        _ref$loop = _ref.loop,
-	        loop = _ref$loop === undefined ? Infinity : _ref$loop;
+	        loop = _ref$loop === undefined ? Infinity : _ref$loop,
+	        _ref$observable = _ref.observable,
+	        observable = _ref$observable === undefined ? true : _ref$observable;
 
 	    _classCallCheck(this, Sprite);
 
-	    var _this = _possibleConstructorReturn(this, (Sprite.__proto__ || Object.getPrototypeOf(Sprite)).call(this, { name: name, img: img }));
+	    var _this = _possibleConstructorReturn(this, (Sprite.__proto__ || Object.getPrototypeOf(Sprite)).call(this, { name: name, img: img, observable: observable }));
 
 	    if (!img) {
 	      return _possibleConstructorReturn(_this);

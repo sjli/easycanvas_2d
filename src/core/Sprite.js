@@ -14,9 +14,10 @@ class Sprite extends ECImage {
     rows = 1,
     frameRate = 60,
     autoStart = true,
-    loop = Infinity
+    loop = Infinity,
+    observable = true
   } = {}) {
-    super({name, img});
+    super({name, img, observable});
     if (!img) {return;}
 
     this.width = width || img.width / cols >> 0;

@@ -10,10 +10,16 @@
             width: 100%;
             height: 100%;
           }
+          #tip {
+            position: absolute;
+            bottom: 10px;
+            right: 100px;
+          }
         </style>
     </head>
     <body>
       <div id="app" class="app"></div>
+      <p id="tip">Tip: Drag the Axis</p>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
         var assets = [
@@ -32,19 +38,40 @@
           fore.setCoordCenter(200, 300);
           fore.config.showAxis = true;
 
+          //添加坐标轴
+          var axis = new EC.Geometry({
+            observable: true
+          });
+
           //添加图形
           var g1 = new EC.Geometry;
           var g2 = new EC.Geometry;
           var g3 = new EC.Geometry;
 
+          fore.addGeom(axis);
           fore.addGeom(g1);
           fore.addGeom(g2);
           back.addGeom(g3);
 
           //定义路径
-          g1.path.arc(0, 0, 50, 0, Math.PI * 2, false);
-          g2.path.rect(0, 0, 100, 100);
-          g3.path.rect(0, 0, scene.width, scene.height);
+         /* axis.path.moveTo(-fore.coords.x, 0);
+          axis.path.lineTo(0, 0);
+          axis.path.lineTo(0, fore.canvas.height - fore.coords.y);
+          axis.path.moveTo(0, -fore.coords.y);
+          axis.path.lineTo(0, 0);
+          axis.path.lineTo(fore.canvas.width - fore.coords.x, 0);*/
+          function drawAxis() {
+            axis.path = new Path2D; //用于用户拖拽时更新path
+            axis.path.rect(-fore.coords.x, 0, fore.canvas.width, 0.5);
+            axis.path.rect(0, -fore.coords.y, 0.5, fore.canvas.height);
+            axis.path.moveTo(0, 0);
+            axis.path.arc(0, 0, 4, 0, Math.PI * 2, false);
+
+            g1.path.arc(0, 0, 50, 0, Math.PI * 2, false);
+            g2.path.rect(0, 0, 100, 100);
+            g3.path.rect(0, 0, scene.width, scene.height);
+          }
+          drawAxis();
 
           //定义位置
           g1.pos = [100, 100];
@@ -61,10 +88,15 @@
           //定义贴图
           var pattern1 = fore.context.createPattern(EC.assets.get('pattern1'), 'repeat');
 
+          axis.setStyle({
+            fill: 'black'
+          })
+
           g1.setStyle({
-            stroke: 'blue',
             fill: gradient
           });
+
+          g1.motion.setVel([1,0])
 
           g2.setStyle({
             fill: pattern1
@@ -79,21 +111,39 @@
           g2.transform.setOrigin(50, 50);
           var rotateDeg = 1;
 
-          fore.render(g1, g2);
+          fore.render();
 
           back.render();
 
           //rotate animation
           var rot = new EC.Frame(function() {
             g2.rotate(rotateDeg);
+            //g1.updatePos();
 
             fore.clear();
             fore.render();
           });
 
-          rot.start();
+          //rot.start();
 
           window.fore = fore; //for debug
+
+          //事件
+          fore.on('mousemove', function(e) {
+            if (e.region) {
+              fore.canvas.style.cursor = 'move';
+            } else {
+              fore.canvas.style.cursor = 'inherit';
+            }
+          });
+          fore.on('drag', function(e, targetId) {
+            var x = fore.coords.x + e.dx;
+            var y = fore.coords.y + e.dy;
+            drawAxis();
+            fore.setCoordCenter(x, y);
+            fore.clear();
+            fore.render();
+          })
           
         }, function(url) {
           console.log('资源加载失败', url);

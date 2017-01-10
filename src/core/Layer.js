@@ -11,11 +11,63 @@ class Layer {
     this.event = new Event;
     this.canvas = document.createElement('canvas');
     this.context = this.canvas.getContext('2d');
+    this.__polyfill__transform();
     //polyfill for context.addHitRegion, only work for added objects
     this.__polyfill_hitRegion();
     this.geoms = new Map;
     this.texts = [];
     this.images = new Map;
+  }
+
+  __polyfill__transform() {
+    //mozCurrentTransform return array rather than svgmatrix
+    let matrix = this.context.currentTransform;
+    if (matrix) {return;}
+    matrix = this.context.currentTransform = new Transform;
+
+    let selfProps = ['rotate', 'scale', 'translate'];
+    let originSetTransform = this.context.setTransform;
+    let originTransform = this.context.transform;
+    let originSave = this.context.save;
+    let originRestore = this.context.restore;
+
+    this.__transform__store = [];
+
+    selfProps.forEach(prop => {
+      let origin = this.context[prop];
+      this.context[prop] = (...args) => {
+        origin.apply(this.context, args);
+        matrix[prop + 'Self'].apply(this.context.currentTransform, args);
+      }
+    });
+
+    this.context.setTransform = (...args) => {
+      originSetTransform.apply(this.context, args);
+      matrix.setTransform.apply(this.context.currentTransform, args);
+    };
+
+    this.context.transform = (...args) => {
+      originTransform.apply(this.context, args);
+      let tempMatrix = new Transform;
+      tempMatrix.setTransform.apply(tempMatrix, args);
+      matrix.multiply(tempMatrix);
+    };
+
+    this.context.save = () => {
+      originSave.apply(this.context);
+      let tempMatrix = new Transform;
+      let {a, b, c, d, e, f} = this.context.currentTransform;
+      tempMatrix.setTransform(a, b, c, d, e, f);
+      this.__transform__store.push(tempMatrix);
+    }
+
+    this.context.restore = () => {
+      originRestore.apply(this.context);
+      let matrix = this.__transform__store.pop();
+      if (matrix) {
+        this.context.currentTransform = matrix;
+      }
+    }
   }
 
   __polyfill_hitRegion() {
@@ -93,32 +145,26 @@ class Layer {
 
   //make line 1px
   correctPixel() {
-    this.context.translate(.5, .5);
+    this.__correctPixel = 0.5;
+    this.context.setTransform(1, 0, 0, 1, this.__correctPixel, this.__correctPixel);
   }
 
   setCoordCenter(x = 0, y = 0) {
+    let matrix = this.context.currentTransform;
+    let {e, f} = matrix;
     this.coords = {x, y};
-    this.context.translate(x, y);
-  }
-
-  renderAxis() {
-    this.context.beginPath();
-    this.context.moveTo(-this.coords.x, 0);
-    this.context.lineTo(this.canvas.width - this.coords.x, 0);
-    this.context.moveTo(0, -this.coords.y)
-    this.context.lineTo(0, this.canvas.height - this.coords.y);
-    this.context.stroke();
+    this.context.translate(x - e + this.__correctPixel, y - f + this.__correctPixel);
   }
 
   clear() {
+    this.context.save();
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
     this.context.clearRect(0, 0, this.width, this.height);
+    this.context.restore();
     this.context.clearHitRegions();
   }
 
   render() {
-    if (this.config.showAxis) {
-      this.renderAxis();
-    }
     this.renderGeoms();
     this.renderTexts();
     this.renderImages();
@@ -140,12 +186,13 @@ class Layer {
       this.context.transform(a, b, c, d, e, f);
 
       //add hit region
-      this.context.addHitRegion({
-        path,
-        id: geom.id,
-        transform: geom.transform //for polyfill
-      });
-      
+      if (geom.observable) {
+        this.context.addHitRegion({
+          path,
+          id: geom.id,
+          transform: geom.transform //for polyfill
+        });
+      }
       
       let {stroke, fill, rules} = geom.style;
 
@@ -166,7 +213,6 @@ class Layer {
       this.context.restore();
 
     });
-
   }
 
   renderTexts(...texts) {
@@ -225,11 +271,14 @@ class Layer {
         this.context.transform(a, b, c, d, e, f);
       }
       //add hit region
-      this.context.addHitRegion({
-        path: image.path,
-        id: image.name,
-        transform: image.transform //for polyfill
-      });
+      if (image.observable) {
+        this.context.addHitRegion({
+          path: image.path,
+          id: image.name,
+          transform: image.transform //for polyfill
+        });  
+      }
+      
       this.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
       this.context.restore();
     });
