@@ -87,7 +87,6 @@
             fore.geoms.forEach(function(geom) {
               //more detail for dying
               if (geom._dying > 0) {
-                geom._dying--;
                 geom.setStyle({
                   fill: 'red',
                   rules: {
@@ -95,6 +94,7 @@
                   }
                 });
                 geom.scale(1 + 0.2 / geom._dying, 1 + 0.2 / geom._dying);
+                geom._dying--;
               } else if (geom._dying === 0) {
                 fore.geoms.delete(geom.id);
               } else {
@@ -128,7 +128,6 @@
             if (!id) {return;}
             // fore.geoms.delete(id); //simply remove from layer, or
             var geom = fore.geoms.get(id);
-            console.log('dying...');
             geom._dying = 5;
           })
         });

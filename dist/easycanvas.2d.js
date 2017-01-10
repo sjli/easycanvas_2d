@@ -377,7 +377,7 @@
 	        originTransform.apply(_this.context, args);
 	        var tempMatrix = new _Transform2.default();
 	        tempMatrix.setTransform.apply(tempMatrix, args);
-	        matrix.multiply(tempMatrix);
+	        _this.context.currentTransform.multiply(tempMatrix);
 	      };
 
 	      this.context.save = function () {
@@ -428,6 +428,7 @@
 	        });
 	        handler(eventObj);
 	      };
+
 	      this.context.addHitRegion = function (_ref) {
 	        var path = _ref.path,
 	            id = _ref.id,
@@ -442,12 +443,16 @@
 	          id: id,
 	          path: checkPath
 	        });
-	        _this2.event.on('checkHitRegion', checkHandler);
+	        if (!_this2.event.__hitRegion_binded) {
+	          _this2.event.__hitRegion_binded = true;
+	          _this2.event.on('checkHitRegion', checkHandler);
+	        }
 	      };
 
 	      this.context.clearHitRegions = function () {
 	        _this2.__polyfill__regions.clear();
-	        _this2.event.remove('checkHitRegion', checkHandler);
+	        _this2.event.clear();
+	        _this2.event.__hitRegion_binded = false;
 	      };
 	    }
 	  }, {
@@ -829,19 +834,12 @@
 	    };
 	  });
 
-	  var originMultiply = proto.multiply;
-
-	  proto.multiply = function () {
-	    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-	      args[_key2] = arguments[_key2];
-	    }
-
-	    var origin = originMultiply.apply(this, args);
+	  //add setTransform 
+	  proto.clone = function (origin) {
 	    cloneTransform(origin, this);
 	    return this;
 	  };
 
-	  //add setTransform 
 	  proto.setTransform = function (a, b, c, d, e, f) {
 	    var args = { a: a, b: b, c: c, d: d, e: e, f: f };
 	    cloneTransform(args, this);
@@ -862,43 +860,8 @@
 	  //在性能测试方面svgmatrix与dommatrix没有显著的区别，更多的区别是在dommatrix多了一些封装的方法以及对于3d的支持
 	  //且2dcontext只支持svgmatrix，因此此处只扩展封装部分self方法
 	  //polyfill dommatrix methods to svgmatrix
-	  //if (typeof DOMMatrix === 'undefined') {
-	  //polyfill dommatrix methods to svgmatrix
 	  polyfillTransformSelfs();
 	  return self;
-	  //}
-	  //get/set from shadow matrix
-	  /*self.__shadow = new DOMMatrix;
-	   let props = Object.getOwnPropertyNames(SVGMatrix.prototype);
-	  let selfProps = ["multiplySelf", "preMultiplySelf", "translateSelf",
-	                   "scaleSelf", "scale3dSelf", "rotateSelf", 
-	                   "rotateFromVectorSelf", "rotateAxisAngleSelf", 
-	                   "skewXSelf", "skewYSelf", "invertSelf", "flipXSelf", "flipYSelf"];
-	  let excludes = ['constructor', 'a', 'b', 'c', 'd', 'e', 'f'];
-	  props = props.concat(selfProps);
-	   props.forEach(prop => {
-	    if (excludes.indexOf(prop) > -1) {return;}
-	    self[prop] = (...args) => {
-	      let ret;
-	      //transform origin
-	      if (self.__originChanged && regTransOrigin.test(prop)) {
-	        self.__shadow.translateSelf(self.origin[0], self.origin[1]);
-	      }
-	      if(args.length && args[0].__shadow) {
-	        args[0] = args[0].__shadow; //method like multiply error when svgmatrix as arguments on firefox
-	      }
-	      if (prop === "flipXSelf" || prop === "flipYSelf") {
-	        prop = prop.replace('Self', ''); //extend flipXSelf and flipYSelf
-	      }
-	      self.__shadow = self.__shadow[prop].apply(self.__shadow, args);
-	       if (self.__originChanged && regTransOrigin.test(prop)) {
-	        self.__shadow.translateSelf(-self.origin[0], -self.origin[1]);
-	      }
-	      cloneTransform(self.__shadow, self);
-	      return ret;
-	    }
-	  });
-	   return self;*/
 	};
 
 	exports.default = Transform;
@@ -946,6 +909,11 @@
 	        }
 	      }
 	      return false;
+	    }
+	  }, {
+	    key: "clear",
+	    value: function clear() {
+	      this.listeners.clear();
 	    }
 	  }, {
 	    key: "emit",

@@ -50,7 +50,7 @@ class Layer {
       originTransform.apply(this.context, args);
       let tempMatrix = new Transform;
       tempMatrix.setTransform.apply(tempMatrix, args);
-      matrix.multiply(tempMatrix);
+      this.context.currentTransform.multiply(tempMatrix);
     };
 
     this.context.save = () => {
@@ -88,6 +88,7 @@ class Layer {
       });
       handler(eventObj);
     }
+
     this.context.addHitRegion = ({path, id, transform}) => {
       if (!path || !id) {
         return console.error('path: ' + path, 'and id: ' + id, 'are both required for polyfill hit region');
@@ -98,12 +99,16 @@ class Layer {
         id,
         path: checkPath
       });
-      this.event.on('checkHitRegion', checkHandler);
+      if (!this.event.__hitRegion_binded) {
+        this.event.__hitRegion_binded = true;
+        this.event.on('checkHitRegion', checkHandler);
+      }
     };
 
     this.context.clearHitRegions = () => {
       this.__polyfill__regions.clear();
-      this.event.remove('checkHitRegion', checkHandler);
+      this.event.clear();
+      this.event.__hitRegion_binded = false;
     };
 
   }
