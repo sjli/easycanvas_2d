@@ -14,9 +14,7 @@ class Layer {
     this.__polyfill__transform();
     //polyfill for context.addHitRegion, only work for added objects
     this.__polyfill_hitRegion();
-    this.geoms = new Map;
-    this.texts = [];
-    this.images = new Map;
+    this.objects = new Map;
   }
 
   __polyfill__transform() {
@@ -125,7 +123,7 @@ class Layer {
   }
 
   addGeom(geom) {    
-    this.geoms.set(geom.id, geom);
+    this.objects.set(geom.id, geom);
 
     //proxy to observe geom style change
     //performance ?
@@ -134,18 +132,18 @@ class Layer {
 
       geom.event.on('combined', () => {
         //remove when combine to other geometry
-        this.geoms.delete(geom.id);
+        this.objects.delete(geom.id);
       });
 
     }
   }
 
-  addText(...texts) {
-    this.texts = this.texts.concat(texts);
+  addText(text) {
+    this.objects.set(text.id, text);
   }
 
   addImage(ecImage) {
-    this.images.set(ecImage.name, ecImage);
+    this.objects.set(ecImage.id, ecImage);
   }
 
   //make line 1px
@@ -169,124 +167,35 @@ class Layer {
     this.context.clearHitRegions();
   }
 
-  render() {
-    this.renderGeoms();
-    this.renderTexts();
-    this.renderImages();
-  }
+  render(...objects) {
 
-  renderGeoms(...geoms) {
-
-    if (!geoms.length) {
-      geoms = this.geoms;
+    if (!objects.length) {
+      objects = this.objects;
     }
 
-    geoms.forEach(geom => {
+    objects.forEach(object => {
 
       this.context.save();
 
-      let {a, b, c, d, e, f} = geom.transform;
-      let path = geom.path;
-
+      //set transform
+      let {a, b, c, d, e, f} = object.transform;
       this.context.transform(a, b, c, d, e, f);
 
       //add hit region
-      if (geom.observable) {
+      if (object.path && object.observable) {
         this.context.addHitRegion({
-          path,
-          id: geom.id,
-          transform: geom.transform //for polyfill
+          path: object.path,
+          id: object.id,
+          transform: object.transform //for polyfill
         });
       }
-      
-      let {stroke, fill, rules} = geom.style;
 
-      for (var rule in rules) {
-        this.context[rule] = rules[rule];
-      }
+      object.render(this.context);
 
-      if (stroke) {
-        this.context.strokeStyle = stroke;
-        this.context.stroke(path);
-      } 
-
-      if (fill) {
-        this.context.fillStyle = fill;
-        this.context.fill(path);
-      }
-      
       this.context.restore();
 
     });
-  }
 
-  renderTexts(...texts) {
-    if (!texts.length) {
-      texts = this.texts;
-    }
-
-    texts.forEach(text => {
-      this.context.save();
-
-      let {a, b, c, d, e, f} = text.transform;
-      
-      this.context.transform(a, b, c, d, e, f);
-
-      let styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'font', 
-      'textAlign', 'textBaseline', 'direction'];
-
-      styles.forEach((style) => {
-        if (text.style[style]) {
-          this.context[style] = text.style[style];
-        }
-      });
-
-      //multi line
-      text.content.forEach((content, i) => {
-        //emulate line-height 
-        if (i > 0) {
-          this.context.translate(0, text.style.fontSize * text.style.lineHeight);
-        }
-
-        if (text.style.stroke) {
-          this.context.strokeStyle = text.style.stroke;
-          this.context.strokeText(content, 0, 0, text.style.maxWidth);
-        } 
-
-        if (text.style.fill) {
-          this.context.fillStyle = text.style.fill;
-          this.context.fillText(content, 0, 0, text.style.maxWidth);
-        }
-      });
-
-      this.context.restore();
-    });
-  }
-
-  renderImages(...images) {
-    if (!images.length) {
-      images = this.images;
-    }
-
-    images.forEach(image => {
-      let {img, sx, sy, sw, sh, dx, dy, dw, dh} = image;
-      this.context.save();
-      if (image.transform) {
-        let {a, b, c, d, e, f} = image.transform;
-        this.context.transform(a, b, c, d, e, f);
-      }
-      //add hit region
-      if (image.observable) {
-        this.context.addHitRegion({
-          path: image.path,
-          id: image.name,
-          transform: image.transform //for polyfill
-        });  
-      }
-      
-      this.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-      this.context.restore();
-    });
   }
 
   //user events

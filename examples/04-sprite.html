@@ -90,15 +90,15 @@
 
           fore.on('click', function(e) {
             id = e.region;
-            if (id === 'zombie') {
-              fore.images.delete('zombie');
+            if (id === sprite0.id) {
+              fore.objects.delete(sprite0.id);
               sprite0.frame.stop();
               var sprite1 = new EC.Sprite({
                 name: 'boom',
                 img: img1,
                 cols: 4,
                 rows: 4,
-                frameRate: 12,
+                frameRate: 24,
                 loop: 1,
                 width: sprite0.width,
                 height: sprite0.height
@@ -106,7 +106,7 @@
               fore.addImage(sprite1);
               sprite1.transform.clone(sprite0.transform);
               sprite1.event.on('loopEnd', function() {
-                fore.images.delete('boom');
+                fore.objects.delete(sprite1.id);
               });
             }
 

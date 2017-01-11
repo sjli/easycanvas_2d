@@ -24,6 +24,14 @@ class ECImage extends ECObject {
     Object.assign(this, {name, img, sx, sy, sw, sh, dx, dy, dw, dh, path, observable});
   }
 
+  render(context) {
+
+    let {img, sx, sy, sw, sh, dx, dy, dw, dh} = this;
+    
+    context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+
+  }
+
 }
 
 export default ECImage; 

@@ -53,6 +53,10 @@ class ECObject {
     this.transform.setOrigin(x, y);
   }
 
+  render() {
+    //null
+  }
+
 }
 
 export default ECObject;

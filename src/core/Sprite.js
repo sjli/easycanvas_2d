@@ -12,6 +12,7 @@ class Sprite extends ECImage {
     height = 0,
     cols = 1,
     rows = 1,
+    frames = 0,
     frameRate = 60,
     autoStart = true,
     loop = Infinity,
@@ -30,7 +31,7 @@ class Sprite extends ECImage {
     this.index = 0;
     this.cols = cols;
     this.rows = rows;
-    this.frames = cols * rows;
+    this.frames = frames || cols * rows;
     this.frameRate = frameRate;
     this.loop = loop;
 
@@ -46,6 +47,7 @@ class Sprite extends ECImage {
 
     //set transform origin center
     this.transformOrigin(this.width / 2, this.height / 2);
+    
     //animate
     this.frame = new Frame(this.update.bind(this), this.frameRate);
     if (autoStart) {
@@ -53,7 +55,7 @@ class Sprite extends ECImage {
     }
   }
 
-  render() {
+  renderSprite() {
     let row = this.index / this.cols >> 0;
     let col = this.index % this.cols;
     let sw = this._img.width / this.cols >> 0;
@@ -74,7 +76,7 @@ class Sprite extends ECImage {
         return;
       }
     }
-    this.render();
+    this.renderSprite();
     this.index = (this.index + 1) % this.frames;
     this.event.emit('update');
   }

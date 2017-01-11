@@ -61,6 +61,26 @@ class Geometry extends ECObject {
     this.event.emit('styleUpdate');
   }
 
+  render(context) {
+    
+    let {stroke, fill, rules} = this.style;
+
+    for (var rule in rules) {
+      context[rule] = rules[rule];
+    }
+
+    if (stroke) {
+      context.strokeStyle = stroke;
+      context.stroke(this.path);
+    } 
+
+    if (fill) {
+      context.fillStyle = fill;
+      context.fill(this.path);
+    }
+    
+  }
+
 }
 
 export default Geometry;

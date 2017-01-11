@@ -59,7 +59,7 @@
 
           //add drag event
           fore.on('drag', function(e, id) {
-            var geom = fore.geoms.get(id);
+            var geom = fore.objects.get(id);
             var pos = geom.pos;
             geom.pos = [pos[0] + e.dx, pos[1] + e.dy];
             fore.clear();

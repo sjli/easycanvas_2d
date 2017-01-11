@@ -323,9 +323,7 @@
 	    this.__polyfill__transform();
 	    //polyfill for context.addHitRegion, only work for added objects
 	    this.__polyfill_hitRegion();
-	    this.geoms = new Map();
-	    this.texts = [];
-	    this.images = new Map();
+	    this.objects = new Map();
 	  }
 
 	  _createClass(Layer, [{
@@ -472,7 +470,7 @@
 	    value: function addGeom(geom) {
 	      var _this3 = this;
 
-	      this.geoms.set(geom.id, geom);
+	      this.objects.set(geom.id, geom);
 
 	      //proxy to observe geom style change
 	      //performance ?
@@ -481,23 +479,19 @@
 
 	        geom.event.on('combined', function () {
 	          //remove when combine to other geometry
-	          _this3.geoms.delete(geom.id);
+	          _this3.objects.delete(geom.id);
 	        });
 	      }
 	    }
 	  }, {
 	    key: 'addText',
-	    value: function addText() {
-	      for (var _len4 = arguments.length, texts = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-	        texts[_key4] = arguments[_key4];
-	      }
-
-	      this.texts = this.texts.concat(texts);
+	    value: function addText(text) {
+	      this.objects.set(text.id, text);
 	    }
 	  }, {
 	    key: 'addImage',
 	    value: function addImage(ecImage) {
-	      this.images.set(ecImage.name, ecImage);
+	      this.objects.set(ecImage.id, ecImage);
 	    }
 
 	    //make line 1px
@@ -533,174 +527,43 @@
 	  }, {
 	    key: 'render',
 	    value: function render() {
-	      this.renderGeoms();
-	      this.renderTexts();
-	      this.renderImages();
-	    }
-	  }, {
-	    key: 'renderGeoms',
-	    value: function renderGeoms() {
 	      var _this4 = this;
 
-	      for (var _len5 = arguments.length, geoms = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
-	        geoms[_key5] = arguments[_key5];
+	      for (var _len4 = arguments.length, objects = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+	        objects[_key4] = arguments[_key4];
 	      }
 
-	      if (!geoms.length) {
-	        geoms = this.geoms;
+	      if (!objects.length) {
+	        objects = this.objects;
 	      }
 
-	      geoms.forEach(function (geom) {
+	      objects.forEach(function (object) {
 
 	        _this4.context.save();
 
-	        var _geom$transform = geom.transform,
-	            a = _geom$transform.a,
-	            b = _geom$transform.b,
-	            c = _geom$transform.c,
-	            d = _geom$transform.d,
-	            e = _geom$transform.e,
-	            f = _geom$transform.f;
-
-	        var path = geom.path;
+	        //set transform
+	        var _object$transform = object.transform,
+	            a = _object$transform.a,
+	            b = _object$transform.b,
+	            c = _object$transform.c,
+	            d = _object$transform.d,
+	            e = _object$transform.e,
+	            f = _object$transform.f;
 
 	        _this4.context.transform(a, b, c, d, e, f);
 
 	        //add hit region
-	        if (geom.observable) {
+	        if (object.path && object.observable) {
 	          _this4.context.addHitRegion({
-	            path: path,
-	            id: geom.id,
-	            transform: geom.transform //for polyfill
+	            path: object.path,
+	            id: object.id,
+	            transform: object.transform //for polyfill
 	          });
 	        }
 
-	        var _geom$style = geom.style,
-	            stroke = _geom$style.stroke,
-	            fill = _geom$style.fill,
-	            rules = _geom$style.rules;
-
-
-	        for (var rule in rules) {
-	          _this4.context[rule] = rules[rule];
-	        }
-
-	        if (stroke) {
-	          _this4.context.strokeStyle = stroke;
-	          _this4.context.stroke(path);
-	        }
-
-	        if (fill) {
-	          _this4.context.fillStyle = fill;
-	          _this4.context.fill(path);
-	        }
+	        object.render(_this4.context);
 
 	        _this4.context.restore();
-	      });
-	    }
-	  }, {
-	    key: 'renderTexts',
-	    value: function renderTexts() {
-	      var _this5 = this;
-
-	      for (var _len6 = arguments.length, texts = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
-	        texts[_key6] = arguments[_key6];
-	      }
-
-	      if (!texts.length) {
-	        texts = this.texts;
-	      }
-
-	      texts.forEach(function (text) {
-	        _this5.context.save();
-
-	        var _text$transform = text.transform,
-	            a = _text$transform.a,
-	            b = _text$transform.b,
-	            c = _text$transform.c,
-	            d = _text$transform.d,
-	            e = _text$transform.e,
-	            f = _text$transform.f;
-
-
-	        _this5.context.transform(a, b, c, d, e, f);
-
-	        var styles = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', 'font', 'textAlign', 'textBaseline', 'direction'];
-
-	        styles.forEach(function (style) {
-	          if (text.style[style]) {
-	            _this5.context[style] = text.style[style];
-	          }
-	        });
-
-	        //multi line
-	        text.content.forEach(function (content, i) {
-	          //emulate line-height 
-	          if (i > 0) {
-	            _this5.context.translate(0, text.style.fontSize * text.style.lineHeight);
-	          }
-
-	          if (text.style.stroke) {
-	            _this5.context.strokeStyle = text.style.stroke;
-	            _this5.context.strokeText(content, 0, 0, text.style.maxWidth);
-	          }
-
-	          if (text.style.fill) {
-	            _this5.context.fillStyle = text.style.fill;
-	            _this5.context.fillText(content, 0, 0, text.style.maxWidth);
-	          }
-	        });
-
-	        _this5.context.restore();
-	      });
-	    }
-	  }, {
-	    key: 'renderImages',
-	    value: function renderImages() {
-	      var _this6 = this;
-
-	      for (var _len7 = arguments.length, images = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-	        images[_key7] = arguments[_key7];
-	      }
-
-	      if (!images.length) {
-	        images = this.images;
-	      }
-
-	      images.forEach(function (image) {
-	        var img = image.img,
-	            sx = image.sx,
-	            sy = image.sy,
-	            sw = image.sw,
-	            sh = image.sh,
-	            dx = image.dx,
-	            dy = image.dy,
-	            dw = image.dw,
-	            dh = image.dh;
-
-	        _this6.context.save();
-	        if (image.transform) {
-	          var _image$transform = image.transform,
-	              a = _image$transform.a,
-	              b = _image$transform.b,
-	              c = _image$transform.c,
-	              d = _image$transform.d,
-	              e = _image$transform.e,
-	              f = _image$transform.f;
-
-	          _this6.context.transform(a, b, c, d, e, f);
-	        }
-	        //add hit region
-	        if (image.observable) {
-	          _this6.context.addHitRegion({
-	            path: image.path,
-	            id: image.name,
-	            transform: image.transform //for polyfill
-	          });
-	        }
-
-	        _this6.context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-	        _this6.context.restore();
 	      });
 	    }
 
@@ -709,7 +572,7 @@
 	  }, {
 	    key: 'on',
 	    value: function on(type, handler) {
-	      var _this7 = this;
+	      var _this5 = this;
 
 	      if (type === 'drag') {
 	        var _ret = function () {
@@ -722,11 +585,11 @@
 	              ex = void 0,
 	              ey = void 0;
 	          startType.forEach(function (type) {
-	            _this7.canvas.addEventListener(type, function (e) {
-	              if (!_this7.__polyfill__regions) {
+	            _this5.canvas.addEventListener(type, function (e) {
+	              if (!_this5.__polyfill__regions) {
 	                targetId = e.region;
 	              } else {
-	                _this7.event.emit('checkHitRegion', e, function (evt) {
+	                _this5.event.emit('checkHitRegion', e, function (evt) {
 	                  targetId = evt.region;
 	                });
 	              }
@@ -736,13 +599,13 @@
 	          });
 
 	          endType.forEach(function (type) {
-	            _this7.canvas.addEventListener(type, function (e) {
+	            _this5.canvas.addEventListener(type, function (e) {
 	              targetId = null;
 	            });
 	          });
 
 	          moveType.forEach(function (type) {
-	            _this7.canvas.addEventListener(type, function (e) {
+	            _this5.canvas.addEventListener(type, function (e) {
 	              if (targetId) {
 	                ex = e.clientX;
 	                ey = e.clientY;
@@ -764,10 +627,10 @@
 	      }
 
 	      var wrapHandler = function wrapHandler(e) {
-	        if (!_this7.__polyfill__regions) {
+	        if (!_this5.__polyfill__regions) {
 	          return handler(e);
 	        } else {
-	          _this7.event.emit('checkHitRegion', e, handler);
+	          _this5.event.emit('checkHitRegion', e, handler);
 	        }
 	      };
 
@@ -1030,6 +893,29 @@
 	      });
 	      this.event.emit('styleUpdate');
 	    }
+	  }, {
+	    key: 'render',
+	    value: function render(context) {
+	      var _style = this.style,
+	          stroke = _style.stroke,
+	          fill = _style.fill,
+	          rules = _style.rules;
+
+
+	      for (var rule in rules) {
+	        context[rule] = rules[rule];
+	      }
+
+	      if (stroke) {
+	        context.strokeStyle = stroke;
+	        context.stroke(this.path);
+	      }
+
+	      if (fill) {
+	        context.fillStyle = fill;
+	        context.fill(this.path);
+	      }
+	    }
 	  }]);
 
 	  return Geometry;
@@ -1129,6 +1015,11 @@
 	      this.transform.setOrigin(x, y);
 	    }
 	  }, {
+	    key: 'render',
+	    value: function render() {
+	      //null
+	    }
+	  }, {
 	    key: 'pos',
 	    get: function get() {
 	      return [this.transform.e, this.transform.f];
@@ -1174,10 +1065,10 @@
 	  function Motion() {
 	    _classCallCheck(this, Motion);
 
-	    var _motion = new Int16Array(6);
-	    this.pos = new Int16Array(_motion.buffer, 0, 2);
-	    this.vel = new Int16Array(_motion.buffer, 4, 2);
-	    this.accel = new Int16Array(_motion.buffer, 8, 2);
+	    var _motion = new Float32Array(6);
+	    this.pos = new Float32Array(_motion.buffer, 0, 2);
+	    this.vel = new Float32Array(_motion.buffer, 8, 2);
+	    this.accel = new Float32Array(_motion.buffer, 16, 2);
 	  }
 
 	  _createClass(Motion, [{
@@ -1230,6 +1121,8 @@
 	  value: true
 	});
 
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	var _ECObject2 = __webpack_require__(7);
 
 	var _ECObject3 = _interopRequireDefault(_ECObject2);
@@ -1281,6 +1174,24 @@
 	    Object.assign(_this, { name: name, img: img, sx: sx, sy: sy, sw: sw, sh: sh, dx: dx, dy: dy, dw: dw, dh: dh, path: path, observable: observable });
 	    return _this;
 	  }
+
+	  _createClass(ECImage, [{
+	    key: 'render',
+	    value: function render(context) {
+	      var img = this.img,
+	          sx = this.sx,
+	          sy = this.sy,
+	          sw = this.sw,
+	          sh = this.sh,
+	          dx = this.dx,
+	          dy = this.dy,
+	          dw = this.dw,
+	          dh = this.dh;
+
+
+	      context.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+	    }
+	  }]);
 
 	  return ECImage;
 	}(_ECObject3.default);
@@ -1420,8 +1331,7 @@
 
 	      this.frame = new _Frame2.default(function () {
 	        _this2.update();
-	        _this2.renderGeoms(_this2.box);
-	        _this2.renderTexts(_this2.text);
+	        _this2.render(_this2.box, _this2.text);
 	        _this2._renderLines();
 	      });
 	      this.frame.start();
@@ -1514,35 +1424,68 @@
 	          stroke = _ref$stroke === undefined ? '' : _ref$stroke,
 	          _ref$fill = _ref.fill,
 	          fill = _ref$fill === undefined ? '' : _ref$fill,
-	          _ref$shadowOffsetX = _ref.shadowOffsetX,
-	          shadowOffsetX = _ref$shadowOffsetX === undefined ? '' : _ref$shadowOffsetX,
-	          _ref$shadowOffsetY = _ref.shadowOffsetY,
-	          shadowOffsetY = _ref$shadowOffsetY === undefined ? '' : _ref$shadowOffsetY,
-	          _ref$shadowBlur = _ref.shadowBlur,
-	          shadowBlur = _ref$shadowBlur === undefined ? '' : _ref$shadowBlur,
-	          _ref$shadowColor = _ref.shadowColor,
-	          shadowColor = _ref$shadowColor === undefined ? '' : _ref$shadowColor,
-	          _ref$filter = _ref.filter,
-	          filter = _ref$filter === undefined ? '' : _ref$filter,
-	          _ref$fontSize = _ref.fontSize,
-	          fontSize = _ref$fontSize === undefined ? 10 : _ref$fontSize,
-	          _ref$fontFamily = _ref.fontFamily,
-	          fontFamily = _ref$fontFamily === undefined ? 'sans-serif' : _ref$fontFamily,
-	          _ref$lineHeight = _ref.lineHeight,
-	          lineHeight = _ref$lineHeight === undefined ? 1 : _ref$lineHeight,
-	          _ref$textAlign = _ref.textAlign,
-	          textAlign = _ref$textAlign === undefined ? '' : _ref$textAlign,
-	          _ref$textBaseline = _ref.textBaseline,
-	          textBaseline = _ref$textBaseline === undefined ? 'top' : _ref$textBaseline,
-	          _ref$direction = _ref.direction,
-	          direction = _ref$direction === undefined ? '' : _ref$direction,
-	          _ref$maxWidth = _ref.maxWidth,
-	          maxWidth = _ref$maxWidth === undefined ? 9999 : _ref$maxWidth;
+	          _ref$rules = _ref.rules,
+	          rules = _ref$rules === undefined ? {} : _ref$rules;
 
-	      fontSize = parseInt(fontSize);
-	      var font = fontSize + 'px ' + fontFamily;
-	      this.style = { stroke: stroke, fill: fill, shadowOffsetX: shadowOffsetX, shadowOffsetY: shadowOffsetY, shadowBlur: shadowBlur, shadowColor: shadowColor,
-	        filter: filter, fontSize: fontSize, fontFamily: fontFamily, font: font, lineHeight: lineHeight, textAlign: textAlign, textBaseline: textBaseline, direction: direction, maxWidth: maxWidth };
+	      var defaultRules = {
+	        shadowOffsetX: '',
+	        shadowOffsetY: '',
+	        shadowBlur: '',
+	        shadowColor: '',
+	        filter: '',
+	        fontSize: 10,
+	        fontFamily: 'sans-serif',
+	        lineHeight: 1,
+	        textAlign: '',
+	        textBaseline: 'top', //default start as the left-top corn, same as dom
+	        direction: '',
+	        maxWidth: 9999
+	      };
+	      this.style = this.style || { rules: defaultRules };
+	      Object.assign(this.style.rules, rules);
+
+	      this.style.rules.fontSize = parseInt(this.style.rules.fontSize);
+	      this.style.rules.font = this.style.rules.fontSize + 'px ' + this.style.rules.fontFamily;
+
+	      if (stroke) {
+	        this.style.stroke = stroke;
+	      }
+	      if (fill) {
+	        this.style.fill = fill;
+	      }
+
+	      this.event.emit('styleUpdate');
+	    }
+	  }, {
+	    key: 'render',
+	    value: function render(context) {
+	      var _style = this.style,
+	          stroke = _style.stroke,
+	          fill = _style.fill,
+	          rules = _style.rules;
+
+
+	      for (var rule in rules) {
+	        context[rule] = rules[rule];
+	      }
+
+	      //multi line
+	      this.content.forEach(function (content, i) {
+	        //emulate line-height 
+	        if (i > 0) {
+	          context.translate(0, rules.fontSize * rules.lineHeight);
+	        }
+
+	        if (stroke) {
+	          context.strokeStyle = stroke;
+	          context.strokeText(content, 0, 0, rules.maxWidth);
+	        }
+
+	        if (fill) {
+	          context.fillStyle = fill;
+	          context.fillText(content, 0, 0, rules.maxWidth);
+	        }
+	      });
 	    }
 	  }, {
 	    key: 'content',
@@ -1701,6 +1644,8 @@
 	        cols = _ref$cols === undefined ? 1 : _ref$cols,
 	        _ref$rows = _ref.rows,
 	        rows = _ref$rows === undefined ? 1 : _ref$rows,
+	        _ref$frames = _ref.frames,
+	        frames = _ref$frames === undefined ? 0 : _ref$frames,
 	        _ref$frameRate = _ref.frameRate,
 	        frameRate = _ref$frameRate === undefined ? 60 : _ref$frameRate,
 	        _ref$autoStart = _ref.autoStart,
@@ -1730,7 +1675,7 @@
 	    _this.index = 0;
 	    _this.cols = cols;
 	    _this.rows = rows;
-	    _this.frames = cols * rows;
+	    _this.frames = frames || cols * rows;
 	    _this.frameRate = frameRate;
 	    _this.loop = loop;
 
@@ -1746,6 +1691,7 @@
 
 	    //set transform origin center
 	    _this.transformOrigin(_this.width / 2, _this.height / 2);
+
 	    //animate
 	    _this.frame = new _Frame2.default(_this.update.bind(_this), _this.frameRate);
 	    if (autoStart) {
@@ -1755,8 +1701,8 @@
 	  }
 
 	  _createClass(Sprite, [{
-	    key: 'render',
-	    value: function render() {
+	    key: 'renderSprite',
+	    value: function renderSprite() {
 	      var row = this.index / this.cols >> 0;
 	      var col = this.index % this.cols;
 	      var sw = this._img.width / this.cols >> 0;
@@ -1775,7 +1721,7 @@
 	          return;
 	        }
 	      }
-	      this.render();
+	      this.renderSprite();
 	      this.index = (this.index + 1) % this.frames;
 	      this.event.emit('update');
 	    }

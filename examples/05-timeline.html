@@ -1,0 +1,120 @@
+<!Doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Example</title>
+        <style type="text/css">
+          html,
+          body, 
+          .app {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+          }
+          #tip {
+            position: absolute;
+            bottom: 10px;
+            right: 100px;
+          }
+        </style>
+    </head>
+    <body>
+      <div id="app" class="app"></div>
+      <p id="tip">Tip: </p>
+      <script src="../dist/easycanvas.2d.js"></script>
+      <script type="text/javascript">
+        var assets = [
+          {
+            'name': 'plane',
+            'url': 'images/sprite-plane.png'
+          },
+          {
+            'name': 'bg',
+            'url': 'images/bg-universe.jpg'
+          }
+        ];
+
+        EC.init('#app', assets).then(function() {
+
+          //初始化场景
+          var scene = EC.addScene();
+          var fore = scene.foreLayer;
+          var back = scene.backLayer;
+
+          back.createBG({
+            img: EC.assets.get('bg')
+          });
+
+          back.render();
+
+          var plane = new EC.Sprite({
+            name: 'plane',
+            img: EC.assets.get('plane'),
+            cols: 5,
+            rows: 8,
+            frames: 39,
+            frameRate: 24
+          });
+
+          fore.addImage(plane);
+
+          plane.pos = [200, 200];
+
+          plane.scale(2, 2);
+          //定义分解动作
+          var toLeft = function() {
+
+          }
+
+          plane.renderSprite();
+          fore.render();
+
+
+          var frame = new EC.Frame(function() {
+            plane.updatePos();
+            var x = plane.pos[0], y = plane.pos[1];
+            var vel = plane.motion.vel;
+            if (x < 0 || x > fore.width - 64) {
+              vel[0] = 0;
+            }
+            if (y < 0 || y > fore.height - 64) {
+              vel[1] = 0;
+            }
+            plane.motion.setVel(vel);
+            fore.clear();
+            fore.render();
+          });
+
+          frame.start();
+          
+
+            
+          //debug
+          window.fore = fore; 
+
+          window.addEventListener('keydown', function(e) {
+            switch (e.key) {
+              case 'w':
+                plane.motion.setVel([0, -2]);
+                break;
+              case 'a':
+                plane.motion.setVel([-2, 0])
+                break;
+              case 's':
+                plane.motion.setVel([0, 2]);
+                break;
+              case 'd':
+                plane.motion.setVel([2, 0]);
+                break;
+            }
+          });
+          
+          
+        }, function(url) {
+          console.log('资源加载失败', url);
+        }).catch(function(e) {
+          console.log(e);
+        });
+      </script>
+    </body>
+</html>

@@ -36,9 +36,11 @@
 
         text1.setStyle({
           fill: 'black',
-          fontSize: 40,
-          textAlign: 'center',
-          maxWidth: 180
+          rules: {
+            fontSize: 40,
+            textAlign: 'center',
+            maxWidth: 180
+          }
         })
 
         fore.addText(text1);
@@ -46,8 +48,10 @@
         var text2 = new EC.Text('Hello\nMulti<br>Line');
         text2.setStyle({
           fill: 'black',
-          lineHeight: 1.2,
-          fontSize: 30
+          rules: {
+            lineHeight: 1.2,
+            fontSize: 30
+          }
         });
 
         text2.pos = [200, 300]

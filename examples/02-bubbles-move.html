@@ -67,8 +67,6 @@
 
           createRandomBubbles(100);
 
-          fore.render();
-
           back.createBG({
             fill:'#eeeeff'
           });
@@ -77,7 +75,7 @@
           
           var update = function() {
 
-            fore.geoms.forEach(function(geom) {
+            fore.objects.forEach(function(geom) {
               geom.updatePos();
               var pos = geom.pos;
               if (pos[0] < 0 || pos[0] > scene.width) {

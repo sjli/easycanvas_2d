@@ -52,8 +52,7 @@ class FPS extends Layer {
   show() {
     this.frame = new Frame(() => {
       this.update();
-      this.renderGeoms(this.box);
-      this.renderTexts(this.text);
+      this.render(this.box, this.text);
       this._renderLines();
     });
     this.frame.start();
