@@ -1,7 +1,7 @@
 import Geometry from './Geometry';
 import Text from './Text';
 import Layer from './Layer';
-import Frame from './Frame';
+import Animation from './Animation';
 
 let textRate = 50; //40frame
 let refreshRate = 2; //2frame
@@ -50,16 +50,16 @@ class FPS extends Layer {
   }
 
   show() {
-    this.frame = new Frame(() => {
+    this.animation = new Animation(() => {
       this.update();
       this.render(this.box, this.text);
       this._renderLines();
     });
-    this.frame.start();
+    this.animation.start();
   }
 
   hide() {
-    this.frame.stop();
+    this.animation.stop();
     this.clear();
   }
 

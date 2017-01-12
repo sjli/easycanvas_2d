@@ -1,15 +1,14 @@
-//animation frame
-let frames = [];
+let animations = [];
 
 
-class Frame {
+class Animation {
 
   constructor(handler, rate) {
     if (typeof handler !== 'function') {
       throw new Error('request handler must be a function');
     }
     if (rate && !isNaN(rate)) {
-      this.fpsInterval = 1000 / rate;
+      this.setRate(rate);
     }
     this.handler = () => {
       this.requestId = requestAnimationFrame(this.handler);
@@ -30,13 +29,17 @@ class Frame {
       
     };
     this.requestId = null;
-    frames.push(this);
+    animations.push(this);
+  }
+
+  setRate(rate) {
+    this.fpsInterval = 1000 / rate;
   }
 
   start(flagAll) {
     if (this.requestId) {
       if (!flagAll) {
-        console.log('this frame already started');
+        console.log('this animation already started');
       }
       return;
     }
@@ -47,7 +50,7 @@ class Frame {
   stop(flagAll) {
     if (!this.requestId) {
       if (!flagAll) {
-        console.log('this frame already stoped');
+        console.log('this animation already stoped');
       }
       return;
     }
@@ -56,17 +59,17 @@ class Frame {
   }
 
   static startAll() {
-    frames.forEach(frame => {
-      frame.start(true);
+    animations.forEach(animation => {
+      animation.start(true);
     });
   }
 
   static stopAll() {
-    frames.forEach(frame => {
-      frame.stop(true);
+    animations.forEach(animation => {
+      animation.stop(true);
     });
   }
 
 }
 
-export default Frame;
+export default Animation;

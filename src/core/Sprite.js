@@ -1,5 +1,5 @@
 import ECImage from './ECImage'
-import Frame from './Frame'
+import Animation from './Animation'
 
 let spriteIndex = 0;
 
@@ -14,9 +14,7 @@ class Sprite extends ECImage {
     rows = 1,
     frames = 0,
     frameRate = 60,
-    autoStart = true,
-    loop = Infinity,
-    observable = true
+    observable = true,
   } = {}) {
     super({name, img, observable});
     if (!img) {return;}
@@ -33,7 +31,7 @@ class Sprite extends ECImage {
     this.rows = rows;
     this.frames = frames || cols * rows;
     this.frameRate = frameRate;
-    this.loop = loop;
+    this.__actions = new Map;
 
     //use unique canvas for better performance
     this.canvas = document.createElement('canvas');
@@ -47,12 +45,9 @@ class Sprite extends ECImage {
 
     //set transform origin center
     this.transformOrigin(this.width / 2, this.height / 2);
-    
+
     //animate
-    this.frame = new Frame(this.update.bind(this), this.frameRate);
-    if (autoStart) {
-      this.frame.start();
-    }
+    this.animation = new Animation(this.update.bind(this), this.frameRate);
   }
 
   renderSprite() {
@@ -68,17 +63,82 @@ class Sprite extends ECImage {
   }
 
   update() {
-    if (this.loop !== Infinity && this.index === this.frames - 1) {
-      this.loop--;
-      if (this.loop <= 0) {
-        this.frame.stop();
-        this.event.emit('loopEnd');
-        return;
-      }
+    let action = this.__currentAction;
+    if (!action) {
+      this.stop();
+      this.event.emit('noAction');
+      return;
     }
     this.renderSprite();
-    this.index = (this.index + 1) % this.frames;
+
+    let addition = action.reverse ? -1 : 1;
+    let last = action.start + addition * (action.frames - 1);
+
+    this.index = (this.index + addition) % this.frames;
+
+    if (this.index === last) {
+      if (!action.swing) {
+        this.index = action.start;
+      } else {
+        action.start = this.index;
+        action.reverse = !action.reverse;
+      }
+      if (action.loop !== Infinity && action.loop > 0) {
+        action.loop--;
+        if (action.loop === 0) {
+          this.stop();
+          this.event.emit('loopEnd');
+          return;
+        }
+      }
+    }
+    
     this.event.emit('update');
+  }
+
+  defineAction({
+    name = '',
+    start = 0,
+    frames = this.frames,
+    loop = Infinity,
+    reverse = false,
+    swing = false,
+    frameRate = 0
+  }) {
+    if (!name) {
+      return console.error('action name is required');
+    }
+
+    this.__actions.set(name, {
+      start,
+      frames,
+      loop,
+      reverse,
+      swing,
+      frameRate
+    });
+  }
+
+  action(name) {
+    if (!name) {
+      return console.error('action name is required');
+    }
+    let action = this.__actions.get(name);
+    if (!action) {
+      return console.error('there is no action names ' + name);
+    }
+    if (this.__currentAction) {
+      this.stop();
+    }
+    this.index = action.start;
+    this.__currentAction = Object.assign({}, action);
+    this.animation.setRate(action.frameRate || this.frameRate);
+    this.animation.start();
+  }
+
+  stop() {
+    this.animation.stop();
+    this.__currentAction = null;
   }
 
 }

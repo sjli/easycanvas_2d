@@ -3,7 +3,7 @@ import Geometry from './core/Geometry';
 import Text from './core/Text';
 import ECImage from './core/ECImage';
 import Sprite from './core/Sprite';
-import Frame from './core/Frame';
+import Animation from './core/Animation';
 
 Array.prototype.forEach = function(handler) {
   var i = 0, len = this.length;
@@ -27,7 +27,7 @@ var EasyCanvas = {
 
   Sprite,
 
-  Frame,
+  Animation,
 
   assets: new Map,
 

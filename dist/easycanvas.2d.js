@@ -66,9 +66,9 @@
 
 	var _Sprite2 = _interopRequireDefault(_Sprite);
 
-	var _Frame = __webpack_require__(13);
+	var _Animation = __webpack_require__(13);
 
-	var _Frame2 = _interopRequireDefault(_Frame);
+	var _Animation2 = _interopRequireDefault(_Animation);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -95,7 +95,7 @@
 
 	  Sprite: _Sprite2.default,
 
-	  Frame: _Frame2.default,
+	  Animation: _Animation2.default,
 
 	  assets: new Map(),
 
@@ -255,16 +255,39 @@
 	          _ref$img = _ref.img,
 	          img = _ref$img === undefined ? null : _ref$img,
 	          _ref$fill = _ref.fill,
-	          fill = _ref$fill === undefined ? '' : _ref$fill;
+	          fill = _ref$fill === undefined ? '' : _ref$fill,
+	          _ref$sx = _ref.sx,
+	          sx = _ref$sx === undefined ? 0 : _ref$sx,
+	          _ref$sy = _ref.sy,
+	          sy = _ref$sy === undefined ? 0 : _ref$sy,
+	          _ref$sw = _ref.sw,
+	          sw = _ref$sw === undefined ? 0 : _ref$sw,
+	          _ref$sh = _ref.sh,
+	          sh = _ref$sh === undefined ? 0 : _ref$sh,
+	          _ref$dx = _ref.dx,
+	          dx = _ref$dx === undefined ? 0 : _ref$dx,
+	          _ref$dy = _ref.dy,
+	          dy = _ref$dy === undefined ? 0 : _ref$dy,
+	          _ref$dw = _ref.dw,
+	          dw = _ref$dw === undefined ? 0 : _ref$dw,
+	          _ref$dh = _ref.dh,
+	          dh = _ref$dh === undefined ? 0 : _ref$dh;
 
 	      if (img) {
 	        var ecImg = new _ECImage2.default({
 	          name: 'bg',
 	          img: img,
-	          dw: this.canvas.width,
-	          dh: this.canvas.height
+	          sx: sx,
+	          sy: sy,
+	          dx: dx,
+	          dy: dy,
+	          sw: sw <= img.width && sw || img.width,
+	          sh: sw <= img.height && sh || img.height,
+	          dw: dw || this.canvas.width,
+	          dh: dh || this.canvas.height
 	        });
 	        this.addImage(ecImg);
+	        return ecImg;
 	      } else if (fill) {
 	        var bg = new _Geometry2.default();
 	        bg.path.rect(0, 0, this.canvas.width, this.canvas.height);
@@ -1258,9 +1281,9 @@
 
 	var _Layer3 = _interopRequireDefault(_Layer2);
 
-	var _Frame = __webpack_require__(13);
+	var _Animation = __webpack_require__(13);
 
-	var _Frame2 = _interopRequireDefault(_Frame);
+	var _Animation2 = _interopRequireDefault(_Animation);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1329,17 +1352,17 @@
 	    value: function show() {
 	      var _this2 = this;
 
-	      this.frame = new _Frame2.default(function () {
+	      this.animation = new _Animation2.default(function () {
 	        _this2.update();
 	        _this2.render(_this2.box, _this2.text);
 	        _this2._renderLines();
 	      });
-	      this.frame.start();
+	      this.animation.start();
 	    }
 	  }, {
 	    key: 'hide',
 	    value: function hide() {
-	      this.frame.stop();
+	      this.animation.stop();
 	      this.clear();
 	    }
 	  }, {
@@ -1518,20 +1541,19 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	//animation frame
-	var frames = [];
+	var animations = [];
 
-	var Frame = function () {
-	  function Frame(handler, rate) {
+	var Animation = function () {
+	  function Animation(handler, rate) {
 	    var _this = this;
 
-	    _classCallCheck(this, Frame);
+	    _classCallCheck(this, Animation);
 
 	    if (typeof handler !== 'function') {
 	      throw new Error('request handler must be a function');
 	    }
 	    if (rate && !isNaN(rate)) {
-	      this.fpsInterval = 1000 / rate;
+	      this.setRate(rate);
 	    }
 	    this.handler = function () {
 	      _this.requestId = requestAnimationFrame(_this.handler);
@@ -1549,15 +1571,20 @@
 	      }
 	    };
 	    this.requestId = null;
-	    frames.push(this);
+	    animations.push(this);
 	  }
 
-	  _createClass(Frame, [{
+	  _createClass(Animation, [{
+	    key: 'setRate',
+	    value: function setRate(rate) {
+	      this.fpsInterval = 1000 / rate;
+	    }
+	  }, {
 	    key: 'start',
 	    value: function start(flagAll) {
 	      if (this.requestId) {
 	        if (!flagAll) {
-	          console.log('this frame already started');
+	          console.log('this animation already started');
 	        }
 	        return;
 	      }
@@ -1569,7 +1596,7 @@
 	    value: function stop(flagAll) {
 	      if (!this.requestId) {
 	        if (!flagAll) {
-	          console.log('this frame already stoped');
+	          console.log('this animation already stoped');
 	        }
 	        return;
 	      }
@@ -1579,23 +1606,23 @@
 	  }], [{
 	    key: 'startAll',
 	    value: function startAll() {
-	      frames.forEach(function (frame) {
-	        frame.start(true);
+	      animations.forEach(function (animation) {
+	        animation.start(true);
 	      });
 	    }
 	  }, {
 	    key: 'stopAll',
 	    value: function stopAll() {
-	      frames.forEach(function (frame) {
-	        frame.stop(true);
+	      animations.forEach(function (animation) {
+	        animation.stop(true);
 	      });
 	    }
 	  }]);
 
-	  return Frame;
+	  return Animation;
 	}();
 
-	exports.default = Frame;
+	exports.default = Animation;
 
 /***/ },
 /* 14 */
@@ -1613,9 +1640,9 @@
 
 	var _ECImage3 = _interopRequireDefault(_ECImage2);
 
-	var _Frame = __webpack_require__(13);
+	var _Animation = __webpack_require__(13);
 
-	var _Frame2 = _interopRequireDefault(_Frame);
+	var _Animation2 = _interopRequireDefault(_Animation);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1648,10 +1675,6 @@
 	        frames = _ref$frames === undefined ? 0 : _ref$frames,
 	        _ref$frameRate = _ref.frameRate,
 	        frameRate = _ref$frameRate === undefined ? 60 : _ref$frameRate,
-	        _ref$autoStart = _ref.autoStart,
-	        autoStart = _ref$autoStart === undefined ? true : _ref$autoStart,
-	        _ref$loop = _ref.loop,
-	        loop = _ref$loop === undefined ? Infinity : _ref$loop,
 	        _ref$observable = _ref.observable,
 	        observable = _ref$observable === undefined ? true : _ref$observable;
 
@@ -1677,7 +1700,7 @@
 	    _this.rows = rows;
 	    _this.frames = frames || cols * rows;
 	    _this.frameRate = frameRate;
-	    _this.loop = loop;
+	    _this.__actions = new Map();
 
 	    //use unique canvas for better performance
 	    _this.canvas = document.createElement('canvas');
@@ -1693,10 +1716,7 @@
 	    _this.transformOrigin(_this.width / 2, _this.height / 2);
 
 	    //animate
-	    _this.frame = new _Frame2.default(_this.update.bind(_this), _this.frameRate);
-	    if (autoStart) {
-	      _this.frame.start();
-	    }
+	    _this.animation = new _Animation2.default(_this.update.bind(_this), _this.frameRate);
 	    return _this;
 	  }
 
@@ -1713,17 +1733,92 @@
 	  }, {
 	    key: 'update',
 	    value: function update() {
-	      if (this.loop !== Infinity && this.index === this.frames - 1) {
-	        this.loop--;
-	        if (this.loop <= 0) {
-	          this.frame.stop();
-	          this.event.emit('loopEnd');
-	          return;
-	        }
+	      var action = this.__currentAction;
+	      if (!action) {
+	        this.stop();
+	        this.event.emit('noAction');
+	        return;
 	      }
 	      this.renderSprite();
-	      this.index = (this.index + 1) % this.frames;
+
+	      var addition = action.reverse ? -1 : 1;
+	      var last = action.start + addition * (action.frames - 1);
+
+	      this.index = (this.index + addition) % this.frames;
+
+	      if (this.index === last) {
+	        if (!action.swing) {
+	          this.index = action.start;
+	        } else {
+	          action.start = this.index;
+	          action.reverse = !action.reverse;
+	        }
+	        if (action.loop !== Infinity && action.loop > 0) {
+	          action.loop--;
+	          if (action.loop === 0) {
+	            this.stop();
+	            this.event.emit('loopEnd');
+	            return;
+	          }
+	        }
+	      }
+
 	      this.event.emit('update');
+	    }
+	  }, {
+	    key: 'defineAction',
+	    value: function defineAction(_ref2) {
+	      var _ref2$name = _ref2.name,
+	          name = _ref2$name === undefined ? '' : _ref2$name,
+	          _ref2$start = _ref2.start,
+	          start = _ref2$start === undefined ? 0 : _ref2$start,
+	          _ref2$frames = _ref2.frames,
+	          frames = _ref2$frames === undefined ? this.frames : _ref2$frames,
+	          _ref2$loop = _ref2.loop,
+	          loop = _ref2$loop === undefined ? Infinity : _ref2$loop,
+	          _ref2$reverse = _ref2.reverse,
+	          reverse = _ref2$reverse === undefined ? false : _ref2$reverse,
+	          _ref2$swing = _ref2.swing,
+	          swing = _ref2$swing === undefined ? false : _ref2$swing,
+	          _ref2$frameRate = _ref2.frameRate,
+	          frameRate = _ref2$frameRate === undefined ? 0 : _ref2$frameRate;
+
+	      if (!name) {
+	        return console.error('action name is required');
+	      }
+
+	      this.__actions.set(name, {
+	        start: start,
+	        frames: frames,
+	        loop: loop,
+	        reverse: reverse,
+	        swing: swing,
+	        frameRate: frameRate
+	      });
+	    }
+	  }, {
+	    key: 'action',
+	    value: function action(name) {
+	      if (!name) {
+	        return console.error('action name is required');
+	      }
+	      var action = this.__actions.get(name);
+	      if (!action) {
+	        return console.error('there is no action names ' + name);
+	      }
+	      if (this.__currentAction) {
+	        this.stop();
+	      }
+	      this.index = action.start;
+	      this.__currentAction = Object.assign({}, action);
+	      this.animation.setRate(action.frameRate || this.frameRate);
+	      this.animation.start();
+	    }
+	  }, {
+	    key: 'stop',
+	    value: function stop() {
+	      this.animation.stop();
+	      this.__currentAction = null;
 	    }
 	  }]);
 

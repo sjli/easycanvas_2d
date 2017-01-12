@@ -53,60 +53,75 @@
 
           back.render();
           
-          var sprite0 = new EC.Sprite({
+          //define sprite
+          var zombie = new EC.Sprite({
             name: 'zombie',
             img: img0,
             cols: 10,
-            frameRate: 10,
             observable: true
           });
 
-          fore.addImage(sprite0);
+          fore.addImage(zombie);
+
+          var bomb = new EC.Sprite({
+            name: 'boom',
+            img: img1,
+            cols: 4,
+            rows: 4,
+            width: zombie.width,
+            height: zombie.height
+          });
+          fore.addImage(bomb);
+
+          //define action
+          zombie.defineAction({
+            name: 'walk',
+            start: 0,
+            frameRate: 10
+          });
+
+          bomb.defineAction({
+            name: 'boom',
+            start: 0,
+            frameRate: 24,
+            loop: 1
+          });
 
           
-          sprite0.pos = [400, 350];
-          sprite0.flipX();
+          zombie.pos = [400, 350];
+          zombie.flipX();
           
-          sprite0.scale(0.5, 0.5);
+          zombie.scale(0.5, 0.5);
 
-          sprite0.motion.setVel([
+          zombie.motion.setVel([
             -5,
             0
           ]);
           
-          var ani = new EC.Frame(function() {
+          var ani = new EC.Animation(function() {
             //zombie walk
-            if (sprite0.pos[0] <= scene.width + sprite0.width / 2 && sprite0.pos[0] >= -sprite0.width / 2) {
-              sprite0.updatePos();
+            if (zombie.pos[0] <= scene.width + zombie.width / 2 && zombie.pos[0] >= -zombie.width / 2) {
+              zombie.updatePos();
             } else {
-              sprite0.flipX();
-              sprite0.updatePos();
+              zombie.flipX();
+              zombie.updatePos();
             }
             fore.clear();
             fore.render();
           });
 
+          zombie.action('walk');
           ani.start();
 
           fore.on('click', function(e) {
             id = e.region;
-            if (id === sprite0.id) {
-              fore.objects.delete(sprite0.id);
-              sprite0.frame.stop();
-              var sprite1 = new EC.Sprite({
-                name: 'boom',
-                img: img1,
-                cols: 4,
-                rows: 4,
-                frameRate: 24,
-                loop: 1,
-                width: sprite0.width,
-                height: sprite0.height
-              });
-              fore.addImage(sprite1);
-              sprite1.transform.clone(sprite0.transform);
-              sprite1.event.on('loopEnd', function() {
-                fore.objects.delete(sprite1.id);
+            if (id === zombie.id) {
+              fore.objects.delete(zombie.id);
+              zombie.stop();
+              bomb.transform.clone(zombie.transform);
+              bomb.action('boom');
+              bomb.event.on('loopEnd', function() {
+                fore.objects.delete(bomb.id);
               });
             }
 
@@ -114,7 +129,7 @@
             
           //debug
           window.fore = fore; 
-          window.sprite0 = sprite0;
+          window.zombie = zombie;
           
           
         }, function(url) {
