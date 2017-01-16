@@ -15,12 +15,18 @@
             position: absolute;
             bottom: 10px;
             right: 100px;
+            color: white;
+            white-space: pre-wrap;
           }
         </style>
     </head>
     <body>
       <div id="app" class="app"></div>
-      <p id="tip">Tip: </p>
+      <p id="tip">
+      Tip: 
+      'w, a, s, d': plane direction
+      'k': plane shoot
+      </p>
       <script src="../dist/easycanvas.2d.js"></script>
       <script type="text/javascript">
         var assets = [
@@ -41,6 +47,8 @@
           var fore = scene.foreLayer;
           var back = scene.backLayer;
 
+          scene.showFPS();
+
           var bgImg = EC.assets.get('bg');
 
           var bg = back.createBG({
@@ -51,14 +59,21 @@
           });
           back.render();
 
+          var tempBg = new EC.ECImage({
+            img: bgImg,
+            sy: bgImg.height, //hidden
+            sw: back.width,
+            sh: back.height
+          });
+          back.addImage(tempBg);
+
           var plane = new EC.Sprite({
             name: 'plane',
             img: EC.assets.get('plane'),
             cols: 5,
             rows: 8,
             frames: 39,
-            frameRate: 24,
-            autoStart: false
+            frameRate: 24
           });
 
           fore.addImage(plane);
@@ -88,33 +103,47 @@
             frames: 4,
             swing: true,
             frameRate: 5
-          })
+          });
 
           var ani = new EC.Animation(function() {
-            if (bg.direction === 'up') {
-              if (bg.sy > 0) {
-                bg.sy--;
-              } else {
-                plane.motion.setVel([0, -1]);
-              }
+            //bg move
+            if (bg.sy > 0) {
+              bg.sy-=1;
+            } else if (bgImg.height - tempBg.sy < back.height) {
+              var sy = bgImg.height - tempBg.sy;
+              var dist = back.height - sy;
+              bg.sy = 0;
+              bg.sh = bg.dh = dist;
+              bg.dy = sy;
+              //render tempbg, for seamless render
+              tempBg.sh = tempBg.dh = sy + 1;
+              tempBg.dy = 0;
+              tempBg.sy-=1;
+            } else {
+              bg.dy = 0;
+              bg.sy = bgImg.height-back.height;
+              bg.sh = bg.dh = back.height;
+              tempBg.sy = bgImg.height;
+              
             }
-            if (bg.direction === 'down') {
-              if (bg.sy < bgImg.height - back.height) {
-                bg.sy++;
-              } else {
-                plane.motion.setVel([0, 1]);
+            fore.objects.forEach(function(obj) {
+              obj.updatePos();
+              if (obj.pos[1] < -20) {
+                fore.objects.delete(obj.id);
               }
-            }
-            plane.updatePos();
+            })
+            
             var x = plane.pos[0], y = plane.pos[1];
             var vel = plane.motion.vel;
+
             if (x < 0 || x > fore.width - 64) {
               vel[0] = 0;
             }
             if (y < 0 || y > fore.height - 64) {
               vel[1] = 0;
             }
-            plane.motion.setVel(vel);
+            plane.motion.setVel([vel[0], vel[1]]);
+
             back.clear();
             back.render();
             fore.clear();
@@ -124,31 +153,45 @@
           ani.start();
           plane.action('swing');
 
-            
           //debug
+          window.back = back;
           window.fore = fore; 
+          window.ani = ani;
+
+          function shoot() {
+            var bullet = new EC.Geometry;
+            bullet.path.ellipse(0, 0, 5, 20, 0, 0, Math.PI * 2, false);
+            bullet.setStyle({
+              fill: 'white'
+            });
+            bullet.motion.setAccel([0, -.5]);
+            bullet.pos = [plane.pos[0] + plane.width - 5, plane.pos[1]];
+            fore.addGeom(bullet);
+          }
 
           window.addEventListener('keydown', function(e) {
+            if (!e.key) {
+              e.key = String.fromCharCode(e.keyCode).toLowerCase();
+            }
             switch (e.key) {
               case 'w':
-                plane.motion.setVel([0, 0]);
-                bg.direction = 'up';
+                plane.motion.setVel([0, -2]);
                 plane.action('swing');
                 break;
               case 'a':
-                bg.direction = null;
                 plane.motion.setVel([-2, 0]);
                 plane.action('toLeft');
                 break;
               case 's':
-                plane.motion.setVel([0, 0]);
-                bg.direction = 'down';
+                plane.motion.setVel([0, 2]);
                 plane.action('swing');
                 break;
               case 'd':
-                bg.direction = null;
                 plane.motion.setVel([2, 0]);
                 plane.action('toRight');
+                break;
+              case 'k':
+                shoot();
                 break;
             }
           });

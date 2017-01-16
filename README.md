@@ -46,6 +46,8 @@
 
 * firefox的currentTransform返回数组而非SVGMatrix, 其他桌面浏览器和ios移动端浏览器不支持context.currentTransform，用polyfill兼容
 
+* safari下drawImage不支持绘制超出原图区域的空白部分，导致不报错但不执行，需要偏移转换为绘制较小区域
+
 ### 性能对比
 
 * SVGMatrix和DOMMatrix的一般矩阵方法调用上性能相当
