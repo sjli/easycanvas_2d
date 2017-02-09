@@ -1,4 +1,5 @@
 import Scene from './core/Scene';
+import Transform from './core/Transform';
 import Geometry from './core/Geometry';
 import Text from './core/Text';
 import ECImage from './core/ECImage';
@@ -18,6 +19,8 @@ var EasyCanvas = {
   ver: '1.0.0',
 
   Scene,
+
+  Transform,
 
   Geometry,
 

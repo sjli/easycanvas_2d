@@ -50,6 +50,10 @@
 
 	var _Scene2 = _interopRequireDefault(_Scene);
 
+	var _Transform = __webpack_require__(4);
+
+	var _Transform2 = _interopRequireDefault(_Transform);
+
 	var _Geometry = __webpack_require__(6);
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
@@ -86,6 +90,8 @@
 	  ver: '1.0.0',
 
 	  Scene: _Scene2.default,
+
+	  Transform: _Transform2.default,
 
 	  Geometry: _Geometry2.default,
 
@@ -848,6 +854,21 @@
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+	//extend Path2D
+	if (Path2D && Path2D.prototype) {
+	  Path2D.prototype.roundRect = function (x, y, width, height, radius) {
+	    this.moveTo(x, y + radius);
+	    this.arc(x + radius, y + radius, radius, -Math.PI, -Math.PI / 2, false);
+	    this.lineTo(x + width - radius, y);
+	    this.arc(x + width - radius, y + radius, radius, -Math.PI / 2, 0, false);
+	    this.lineTo(x + width, y + height - radius);
+	    this.arc(x + width - radius, y + height - radius, radius, 0, Math.PI / 2, false);
+	    this.lineTo(x + radius, y + height);
+	    this.arc(x + radius, y + height - radius, radius, Math.PI / 2, Math.PI, false);
+	    this.closePath();
+	  };
+	}
+
 	var geomIndex = 0;
 
 	var Geometry = function (_ECObject) {
@@ -898,11 +919,14 @@
 	          _ref2$fill = _ref2.fill,
 	          fill = _ref2$fill === undefined ? '' : _ref2$fill,
 	          _ref2$rules = _ref2.rules,
-	          rules = _ref2$rules === undefined ? {} : _ref2$rules;
+	          rules = _ref2$rules === undefined ? {} : _ref2$rules,
+	          _ref2$methods = _ref2.methods,
+	          methods = _ref2$methods === undefined ? {} : _ref2$methods;
 
 	      var keys = ['shadowOffsetX', 'shadowOffsetY', 'shadowBlur', 'shadowColor', 'filter', //Warning: filter will obviously lower performance
 	      'lineWidth', 'lineCap', 'lineJoin', 'miterLimit', 'globalAlpha'];
-	      this.style = this.style || { rules: {} };
+	      var methodKeys = ['setLineDash'];
+	      this.style = this.style || { rules: {}, methods: {} };
 	      if (stroke) {
 	        this.style.stroke = stroke;
 	      }
@@ -914,6 +938,11 @@
 	          _this3.style.rules[key] = rules[key];
 	        }
 	      });
+	      methodKeys.forEach(function (key) {
+	        if (methods[key]) {
+	          _this3.style.methods[key] = methods[key];
+	        }
+	      });
 	      this.event.emit('styleUpdate');
 	    }
 	  }, {
@@ -922,11 +951,16 @@
 	      var _style = this.style,
 	          stroke = _style.stroke,
 	          fill = _style.fill,
-	          rules = _style.rules;
+	          rules = _style.rules,
+	          methods = _style.methods;
 
 
 	      for (var rule in rules) {
 	        context[rule] = rules[rule];
+	      }
+
+	      for (var method in methods) {
+	        context[method](methods[method]);
 	      }
 
 	      if (stroke) {

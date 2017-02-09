@@ -1,0 +1,471 @@
+
+<!Doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Example</title>
+        <style type="text/css">
+          html,
+          body, 
+          .app {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+          }
+          #tip {
+            position: absolute;
+            bottom: 10px;
+            right: 100px;
+          }
+        </style>
+    </head>
+    <body>
+      <div id="app" class="app"></div>
+      <p id="tip">Tip: Aim and Click<br>
+      Force: <input placeholder="力度" class="volume" type="number" value="10" max=20 min=0>
+      </p>
+      <script src="../dist/easycanvas.2d.js"></script>
+      <script type="text/javascript">
+        var assets = [
+          {
+            'name': 'wood',
+            'url': 'images/pattern-wood.jpg'
+          },
+          {
+            'name': 'billiard',
+            'url': 'images/pattern-billiard.jpg'
+          }
+        ];
+
+        EC.init('#app', assets).then(function() {
+
+          //初始化场景
+          var scene = EC.addScene();
+          var fore = scene.foreLayer;
+          var back = scene.backLayer;
+
+          var pattern0 = back.context.createPattern(EC.assets.get('wood'), 'repeat');
+          var pattern1 = back.context.createPattern(EC.assets.get('billiard'), 'repeat');
+
+          if (pattern1.setTransform) {
+            var matrix = new EC.Transform;
+            matrix.scaleSelf(0.3, 0.3);
+            pattern1.setTransform(matrix);
+          }
+
+          var board = new EC.Geometry;
+          board.path.roundRect(0, 0, 580, 326, 20); //real size 2900x1630 mm^2 / 5
+          board.setStyle({
+            fill: pattern0
+          });
+
+          back.addGeom(board);
+
+          var region = new EC.Geometry;
+          region.path.rect(0, 0, 508 + 24, 254 + 24); //real size 2540x127 mm^2 / 5
+          region.setStyle({
+            fill: pattern1
+          });
+
+          region.pos = [24, 24];
+          
+          back.addGeom(region);
+
+          var holes = [
+            [15, 15],
+            [580 / 2, 15],
+            [580 - 15 - 17 * 2, 15],
+            [580 - 15 - 17 * 2, 326 - 15 - 17 * 2],
+            [580 / 2, 326 - 15 - 17 * 2],
+            [15, 326 - 15 - 17 * 2],
+          ]
+
+          holes.forEach(function(pos) {
+            var hole = new EC.Geometry;
+            hole.path.arc(0, 0, 17, 0, Math.PI * 2, false);
+            hole.pos = [pos[0] + 17, pos[1] + 17];
+            hole.setStyle({
+              fill: 'black'
+            });
+            back.addGeom(hole);
+          });
+
+          var baffles = [
+            {
+              points: [
+                580 / 2, 24,
+                580 / 2 - 5, 25 + 20
+              ]
+            },
+            {
+              points: [
+                580 / 2 - 5, 25 + 20,
+                24 + 50, 25 + 20
+              ]
+            },
+            {
+              points: [
+                24 + 24, 24,
+                24 + 50, 25 + 20
+              ]
+            },
+            {
+              points: [
+                580 / 2 + 33, 24,
+                580 / 2 + 38, 25 + 20
+              ]
+            },
+            {
+              points: [
+                580 / 2 + 38, 25 + 20,
+                580 - 72, 25 + 20
+              ]
+            },
+            {
+              points: [
+                580 - 72, 25 + 20,
+                580 - 48, 24
+              ]
+            },
+            {
+              points: [
+                580 / 2 + 33, 326-24,
+                580 / 2 + 38, 326 - 25 - 20
+              ]
+            },
+            {
+              points: [
+                580 / 2 + 38, 326 - 25 - 20,
+                580 - 72, 326 - 25 - 20
+              ]
+            },
+            {
+              points: [
+                580 - 72, 326 - 25 - 20,
+                580 - 48, 326 - 24
+              ]
+            },
+            {
+              points: [
+                580 / 2, 326 - 24,
+                580 / 2 - 5, 326 - 25 - 20
+              ]
+            },
+            {
+              points: [
+                580 / 2 - 5, 326 - 25 - 20,
+                24 + 50, 326 - 25 - 20
+              ]
+            },
+            {
+              points: [
+                24 + 24, 326 - 24,
+                24 + 50, 326 - 25 - 20
+              ]
+            },
+            {
+              points: [
+                580 - 24, 326 - 25 - 24,
+                580 - 24 - 14, 326 - 25 - 24 - 23
+              ]
+            },
+            {
+              points: [
+                580 - 24 - 14, 326 - 25 - 24 - 23,
+                580 - 24 - 14, 25 + 24 + 23
+              ]
+            },
+            {
+              points: [
+                580 - 24, 25 + 24,
+                580 - 24 - 14, 25 + 24 + 23
+              ]
+            },
+            {
+              points: [
+                24, 326 - 25 - 24,
+                24 + 14, 326 - 25 - 24 - 23
+              ]
+            },
+            {
+              points: [
+                24 + 14, 326 - 25 - 24 - 23,
+                24 + 14, 25 + 24 + 23
+              ]
+            },
+            {
+              points: [
+                24, 25 + 24,
+                24 + 14, 25 + 24 + 23
+              ]
+            }
+          ];
+
+          back.baffles = [];
+
+          baffles.forEach(function(attr) {
+            var baffle = new EC.Geometry;
+            var p = attr.points;
+            baffle.path.moveTo(p[0], p[1]);
+            baffle.path.lineTo(p[2], p[3]);
+            baffle.setStyle({
+              stroke: 'rgba(0,0,0,.5)'
+            });
+            baffle.points = attr.points;
+            back.addGeom(baffle);
+          })
+          
+
+          back.setCoordCenter(100, 100);
+
+          back.render();
+
+          //balls
+          var ball0 = new EC.Geometry;
+          ball0.path.arc(0, 0, 15, 0, Math.PI * 2, false);
+          ball0.pos = [39, (254 + 20) / 2];
+
+          ball0.setStyle({
+            fill: 'white'
+          });
+
+          fore.addGeom(ball0);
+
+          var balls = [
+            [0, 0, '#eec52b'],
+            [26, -15, '#102255'],
+            [26, 15, '#da0f08'],
+            [52, 0, '#4d1a55'],
+            [52, -30, '#f9561f'],
+            [52, 30, '#134431'],
+            [78,-15, '#771d17'],
+            [78, -45, '#111111'],
+            [78, 15, '#eec52b'],
+            [78, 45, '#102255'],
+            [104, 0, '#da0f08'],
+            [104, -30, '#4d1a55'],
+            [104, 30, '#f9561f'],
+            [104, -60, '#134431'],
+            [104, 60, '#771d17']
+          ];
+
+          balls.forEach(function(attr) {
+            var bl = new EC.Geometry;
+            var r = 15;
+            bl.path.arc(0, 0, r, 0, Math.PI * 2, false);
+            bl.pos = [attr[0] + 508 - 45 - 26 * 5, attr[1] + (254 + 20) / 2];
+            bl.setStyle({
+              fill: attr[2]
+            });
+            fore.addGeom(bl);
+            attr.geom = bl;
+          });
+
+          var mx, my, rolling;
+
+          function drawLine() {
+            if (rolling || ball0.isFall) {return;}
+            var context = fore.context;
+            var pos = ball0.pos;
+            var coords = fore.coords;
+            context.save();
+            context.beginPath();
+            context.setLineDash([5, 10]);
+            context.strokeStyle = 'white';
+            context.moveTo(pos[0], pos[1]);
+            context.lineTo(mx - coords.x, my - coords.y);
+            context.stroke();
+            context.restore();
+          }
+
+          fore.setCoordCenter(100 + (580 - 508 - 20) / 2, 100 + (326 - 254 - 20) / 2);
+
+          function dotProduct(a1, a2) {
+            return a1[0] * a2[0] + a1[1] * a2[1];
+          }
+
+          function detectCollision() {
+
+            fore.objects.forEach(function(ball, id0) {
+              var i = +id0.match(/\d+/)[0];
+              //detect hit box
+              var pos = ball.pos, vel = ball.motion.vel;
+
+              fore.objects.forEach(function(target, id1) {
+                var j = +id1.match(/\d+/)[0];
+                if (j <= i) {return;}
+                var v1 = vel, v2 = target.motion.vel;
+                var tpos = target.pos;
+                var dx = tpos[0] - pos[0];
+                var dy = tpos[1] - pos[1];
+                var dl = Math.sqrt(dx * dx + dy * dy);
+                var lx = dx + v2[0] - v1[0];
+                var ly = dy + v2[1] - v1[1];
+                var ll = Math.sqrt(lx * lx + ly * ly);
+                if(ll >= 30) {return;} //no collision
+                var n = [dx / dl, dy / dl];
+                //lets say epsilon = 1
+                var p = (dotProduct(v2, n) - dotProduct(v1, n));
+                var pn = [n[0] * p, n[1] * p];
+                // vel after collsion
+                ball.motion.setVel([v1[0] + pn[0], v1[1] + pn[1]]);
+                target.motion.setVel([v2[0] - pn[0], v2[1] - pn[1]]);
+              });
+
+              //detect hit other balls
+              detectHitBaffles(ball);
+
+            });
+            var vel = ball0.motion.vel;
+            if (vel[0] * 10 >> 0 === 0 && vel[1] * 10 >> 0 === 0) {
+              rolling = false;
+            }
+          }
+
+
+          function detectHitBaffles(ball) {
+            //用Akenine-Möller的射线与球体相交测试方法检测
+            var hit = false;
+            var r = 15;
+            var p0 = ball.pos;
+            var px0 = p0[0] + (580 - 508 - 20) / 2;
+            var py0 = p0[1] + (326 - 254 - 20) / 2;
+            var vel0 = ball.motion.vel;
+
+            baffles.forEach(function(baffle) {
+              if (hit) {return;}
+              //var baffle = baffles[16];
+              var px1 = baffle.points[0];
+              var py1 = baffle.points[1];
+              var px2 = baffle.points[2];
+              var py2 = baffle.points[3];
+              var px21 = px2 - px1;
+              var py21 = py2 - py1;
+              var px01 = px0 - px1;
+              var py01 = py0 - py1;
+              var px02 = px0 - px2;
+              var py02 = py0 - py2;
+              var l21 = Math.sqrt(px21 * px21 + py21 * py21);
+              var shadow = dotProduct([px01, py01], [px21, py21]) / l21;
+              var distSqrt;
+
+
+              if (shadow < 0) {
+                distSqrt = px01 * px01 + py01 * py01;
+              } else if (shadow > l21) {
+                distSqrt = px02 * px02 + py02 * py02;
+              } else {
+                distSqrt = px01 * px01 + py01 * py01 - shadow * shadow;
+              }
+
+              if (distSqrt < r * r) {
+                hit = true;
+                console.log('hit')
+                //碰撞响应，对接触法向量的发射
+                var n = [py21 / l21, px21 / l21];
+                //单位法向量方向与球一致
+                n[0] = Math.abs(n[0]) * (vel0[0] && vel0[0] / Math.abs(vel0[0]));
+                n[1] = Math.abs(n[1]) * (vel0[1] && vel0[1] / Math.abs(vel0[1]));
+                var dot0n = dotProduct(vel0, n);
+                var vel1x = vel0[0] - 2 * dot0n * n[0];
+                var vel1y = vel0[1] - 2 * dot0n * n[1];
+                var vel1l = Math.sqrt(vel1x * vel1x + vel1y * vel1y);
+                var pos1x, pos1y;
+
+                ball.motion.setVel([vel1x, vel1y]);
+
+                //距离重置为相切
+                pos1x = p0[0] - n[0] * (r - Math.sqrt(distSqrt));
+                pos1y = p0[1] - n[1] * (r - Math.sqrt(distSqrt));
+                ball.pos = [pos1x, pos1y];
+              }
+            });
+          }
+
+          window.ball0 = ball0;
+          window.detectHitBaffles = detectHitBaffles;
+          function detectFall() {
+            fore.objects.forEach(function(ball) {
+              var pos = ball.pos;
+              var px = pos[0] >> 0;
+              var py = pos[1] >> 0;
+
+              if ((py < 15 || py > 254 + 20 - 15)) {
+              //if ((py < 15 || py > 254 + 20 - 15) && (px < 15 || px > 528 / 2 + 10 && px < 528 / 2 + 25 || px > 528 - 15)) {
+                //fall
+                console.log('fall')
+                ball.motion.setVel([0, 0]);
+                ball.motion.setAccel([0, 0]);
+                fore.objects.delete(ball.id);
+                //reset ball0
+                if (ball === ball0) {
+                  ball0.isFall = true;
+                  setTimeout(function() {
+                    ball0.pos = [90, (254 + 20) / 2];
+                    ball0.isFall = false;
+                    fore.addGeom(ball0);
+                  }, 1000);
+                }
+              }
+            });
+          }
+
+
+          var ani = new EC.Animation(function() {
+            fore.objects.forEach(function(ball) {
+              var vel = ball.motion.vel;
+              var al = -0.01;
+              ax = al * vel[0];
+              ay = al * vel[1];
+              ball.motion.setAccel([ax, ay]);
+              ball.updatePos();
+            });
+            detectFall();
+            detectCollision();
+            fore.clear();
+            drawLine();
+            fore.render();
+          });
+
+          ani.start();
+
+          var volume = 10;
+
+          document.querySelector('.volume').addEventListener('change', function(e) {
+            volume = +e.target.value;
+          })
+
+
+
+          fore.canvas.addEventListener('mousemove', function(e) {
+            mx = e.clientX;
+            my = e.clientY;
+          });
+
+          fore.canvas.addEventListener('mouseup', function(e) {
+            if (rolling) {return;}
+            rolling = true;
+            var pos = ball0.pos;
+            var vx = mx - fore.coords.x - pos[0];
+            var vy = my - fore.coords.y - pos[1];
+            var vxy = Math.sqrt(vx * vx + vy * vy);
+            if (!vxy || isNaN(vxy)) {return;}
+            vx = vx / vxy * volume;
+            vy = vy / vxy * volume;
+            ball0.motion.setVel([vx, vy]);
+          });
+
+            
+          //debug
+          window.fore = fore; 
+          window.back = back;
+          window.ani = ani;
+          
+        }, function(url) {
+          console.log('资源加载失败', url);
+        }).catch(function(e) {
+          console.log(e);
+        });
+      </script>
+    </body>
+</html>

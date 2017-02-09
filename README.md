@@ -4,19 +4,23 @@
 
 ## 示例
 
-[00-basic.html](https://sjli.github.io/easycanvas_2d/examples/00-basic.html)
+[开始 00-basic.html](https://sjli.github.io/easycanvas_2d/examples/00-basic.html)
 
-[01-bubbles.html](https://sjli.github.io/easycanvas_2d/examples/01-bubbles.html)
+[气泡(基本对象属性和操作) 01-bubbles.html](https://sjli.github.io/easycanvas_2d/examples/01-bubbles.html)
 
-[02-bubbles-move.html](https://sjli.github.io/easycanvas_2d/examples/02-bubbles-move.html)
+[气泡移动(大量对象渲染) 02-bubbles-move.html](https://sjli.github.io/easycanvas_2d/examples/02-bubbles-move.html)
 
-[02a-bubbles-click.html](https://sjli.github.io/easycanvas_2d/examples/02a-bubbles-click.html)
+[气泡点击(对象事件) 02a-bubbles-click.html](https://sjli.github.io/easycanvas_2d/examples/02a-bubbles-click.html)
 
-[02b-bubbles-move-image.html](https://sjli.github.io/easycanvas_2d/examples/02b-bubbles-move-image.html)
+[气泡移动图像版(大量对象渲染的性能对比) 02b-bubbles-move-image.html](https://sjli.github.io/easycanvas_2d/examples/02b-bubbles-move-image.html)
 
-[03-geom-and-text.html](https://sjli.github.io/easycanvas_2d/examples/03-geom-and-text.html)
+[文字(基本文字属性) 03-geom-and-text.html](https://sjli.github.io/easycanvas_2d/examples/03-geom-and-text.html)
 
-[04-sprite.html](https://sjli.github.io/easycanvas_2d/examples/04-sprite.html)
+[精灵图(精灵图的基本属性) 04-sprite.html](https://sjli.github.io/easycanvas_2d/examples/04-sprite.html)
+
+[宇宙射击(场景变化) 04a-sprite-actions.html](https://sjli.github.io/easycanvas_2d/examples/04a-sprite-actions.html)
+
+[桌球游戏(碰撞) 05-collision.html](https://sjli.github.io/easycanvas_2d/examples/05-collision.html)
 
 ## 相比比几年前easycanvas的几个优化点：
 
@@ -47,6 +51,8 @@
 * firefox的currentTransform返回数组而非SVGMatrix, 其他桌面浏览器和ios移动端浏览器不支持context.currentTransform，用polyfill兼容
 
 * safari下drawImage不支持绘制超出原图区域的空白部分，导致不报错但不执行，需要偏移转换为绘制较小区域
+
+* Opera不支持Path2D对象的addPath方法
 
 ### 性能对比
 

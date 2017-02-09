@@ -35,6 +35,10 @@
             'url': 'images/sprite-plane.png'
           },
           {
+            'name': 'rock',
+            'url': 'images/sprite-rock.png'
+          },
+          {
             'name': 'bg',
             'url': 'images/bg-universe.jpg'
           }
@@ -104,6 +108,34 @@
             swing: true,
             frameRate: 5
           });
+
+          var rock = new EC.Sprite({
+            name: 'rock',
+            img: EC.assets.get('rock'),
+            cols: 8,
+            rows: 8,
+            frameRate: 24
+          });
+
+          fore.addImage(rock);
+
+          rock.pos = [fore.width / 2, 100];
+
+          rock.scale(.5, .5);
+
+          rock.defineAction({
+            name: 'roll0',
+            start: 32,
+            frames: 32
+          });
+
+          rock.defineAction({
+            name: 'roll1',
+            start: 32,
+            frames: 32
+          });
+
+          rock.action('roll0');
 
           var ani = new EC.Animation(function() {
             //bg move

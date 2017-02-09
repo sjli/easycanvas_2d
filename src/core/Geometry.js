@@ -1,6 +1,23 @@
 import ECObject from './ECObject'
 
 
+//extend Path2D
+if (Path2D && Path2D.prototype) {
+  Path2D.prototype.roundRect = function(x, y, width, height, radius) {
+    this.moveTo(x, y + radius);
+    this.arc(x + radius, y + radius, radius, -Math.PI, -Math.PI/2, false);
+    this.lineTo(x + width - radius, y);
+    this.arc(x + width -radius, y + radius, radius, -Math.PI/2, 0, false);
+    this.lineTo(x + width, y + height - radius);
+    this.arc(x + width -radius, y + height - radius, radius, 0, Math.PI/2, false);
+    this.lineTo(x + radius, y + height);
+    this.arc(x  + radius, y + height - radius, radius, Math.PI/2, Math.PI, false);
+    this.closePath();
+  }
+}
+
+
+
 let geomIndex = 0;
 
 class Geometry extends ECObject {
@@ -32,7 +49,8 @@ class Geometry extends ECObject {
   setStyle({
     stroke = '',
     fill = '',
-    rules = {}
+    rules = {},
+    methods = {}
   } = {}) {
     var keys = [
       'shadowOffsetX', 
@@ -46,7 +64,10 @@ class Geometry extends ECObject {
       'miterLimit',
       'globalAlpha'
     ];
-    this.style = this.style || {rules:{}};
+    var methodKeys = [
+      'setLineDash'
+    ];
+    this.style = this.style || {rules:{}, methods: {}};
     if (stroke) {
       this.style.stroke = stroke;
     }
@@ -58,15 +79,24 @@ class Geometry extends ECObject {
         this.style.rules[key] = rules[key];
       }
     });
+    methodKeys.forEach(key => {
+      if (methods[key]) {
+        this.style.methods[key] = methods[key];
+      }
+    });
     this.event.emit('styleUpdate');
   }
 
   render(context) {
     
-    let {stroke, fill, rules} = this.style;
+    let {stroke, fill, rules, methods} = this.style;
 
     for (var rule in rules) {
       context[rule] = rules[rule];
+    }
+
+    for (var method in methods) {
+      context[method](methods[method]);
     }
 
     if (stroke) {
