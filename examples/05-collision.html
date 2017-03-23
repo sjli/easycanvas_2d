@@ -284,6 +284,10 @@
             return a1[0] * a2[0] + a1[1] * a2[1];
           }
 
+          function getLen(x, y) {
+            return Math.sqrt(x * x + y * y);
+          }
+
           function detectCollision() {
 
             fore.objects.forEach(function(ball, id0) {
@@ -298,10 +302,10 @@
                 var tpos = target.pos;
                 var dx = tpos[0] - pos[0];
                 var dy = tpos[1] - pos[1];
-                var dl = Math.sqrt(dx * dx + dy * dy);
+                var dl = getLen(dx, dy);
                 var lx = dx + v2[0] - v1[0];
                 var ly = dy + v2[1] - v1[1];
-                var ll = Math.sqrt(lx * lx + ly * ly);
+                var ll = getLen(lx, ly);
                 if(ll >= 30) {return;} //no collision
                 var n = [dx / dl, dy / dl];
                 //lets say epsilon = 1
@@ -345,7 +349,7 @@
               var py01 = py0 - py1;
               var px02 = px0 - px2;
               var py02 = py0 - py2;
-              var l21 = Math.sqrt(px21 * px21 + py21 * py21);
+              var l21 = getLen(px21, py21);
               var shadow = dotProduct([px01, py01], [px21, py21]) / l21;
               var distSqrt;
 
@@ -369,7 +373,7 @@
                 var dot0n = dotProduct(vel0, n);
                 var vel1x = vel0[0] - 2 * dot0n * n[0];
                 var vel1y = vel0[1] - 2 * dot0n * n[1];
-                var vel1l = Math.sqrt(vel1x * vel1x + vel1y * vel1y);
+                var vel1l = getLen(vel1x, vel1y);
                 var pos1x, pos1y;
 
                 ball.motion.setVel([vel1x, vel1y]);
@@ -448,7 +452,7 @@
             var pos = ball0.pos;
             var vx = mx - fore.coords.x - pos[0];
             var vy = my - fore.coords.y - pos[1];
-            var vxy = Math.sqrt(vx * vx + vy * vy);
+            var vxy = getLen(vx, vy);
             if (!vxy || isNaN(vxy)) {return;}
             vx = vx / vxy * volume;
             vy = vy / vxy * volume;

@@ -1,5 +1,5 @@
 import ECImage from './ECImage'
-import Animation from './Animation'
+import Animation from '../animation/Animation'
 
 let spriteIndex = 0;
 

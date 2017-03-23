@@ -1,6 +1,6 @@
 import Layer from './Layer';
-import Geometry from './Geometry';
-import ECImage from './ECImage';
+import Geometry from '../objects/Geometry';
+import ECImage from '../objects/ECImage';
 
 class BackLayer extends Layer {
 

@@ -1,10 +1,10 @@
 import Scene from './core/Scene';
 import Transform from './core/Transform';
-import Geometry from './core/Geometry';
-import Text from './core/Text';
-import ECImage from './core/ECImage';
-import Sprite from './core/Sprite';
-import Animation from './core/Animation';
+import Geometry from './objects/Geometry';
+import Text from './objects/Text';
+import ECImage from './objects/ECImage';
+import Sprite from './objects/Sprite';
+import Animation from './animation/Animation';
 
 Array.prototype.forEach = function(handler) {
   var i = 0, len = this.length;

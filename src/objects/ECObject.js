@@ -1,6 +1,6 @@
-import Transform from './Transform'
-import Motion from './Motion'
-import Event from './Event'
+import Transform from '../core/Transform'
+import Motion from '../core/Motion'
+import Event from '../core/Event'
 
 class ECObject {
 

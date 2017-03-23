@@ -1,7 +1,7 @@
-import Geometry from './Geometry';
-import Text from './Text';
+import Geometry from '../objects/Geometry';
+import Text from '../objects/Text';
 import Layer from './Layer';
-import Animation from './Animation';
+import Animation from '../animation/Animation';
 
 let textRate = 50; //40frame
 let refreshRate = 2; //2frame
