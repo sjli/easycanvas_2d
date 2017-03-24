@@ -43,7 +43,7 @@
               filter: 'grayscale(' + Math.random() + ')'
             });
 
-            geom.pos = [x, y];
+            geom.pos.set(x, y);
           }
 
           function createRandomBubbles(n) {
@@ -61,7 +61,7 @@
           fore.on('drag', function(e, id) {
             var geom = fore.objects.get(id);
             var pos = geom.pos;
-            geom.pos = [pos[0] + e.dx, pos[1] + e.dy];
+            geom.pos.add(new EC.Vector2(e.dx, e.dy));
             fore.clear();
             fore.render();
           })

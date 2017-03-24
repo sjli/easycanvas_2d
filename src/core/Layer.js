@@ -41,13 +41,13 @@ class Layer {
 
     this.context.setTransform = (...args) => {
       originSetTransform.apply(this.context, args);
-      matrix.setTransform.apply(this.context.currentTransform, args);
+      matrix.set.apply(this.context.currentTransform, args);
     };
 
     this.context.transform = (...args) => {
       originTransform.apply(this.context, args);
       let tempMatrix = new Transform;
-      tempMatrix.setTransform.apply(tempMatrix, args);
+      tempMatrix.set.apply(tempMatrix, args);
       this.context.currentTransform.multiply(tempMatrix);
     };
 
@@ -55,7 +55,7 @@ class Layer {
       originSave.apply(this.context);
       let tempMatrix = new Transform;
       let {a, b, c, d, e, f} = this.context.currentTransform;
-      tempMatrix.setTransform(a, b, c, d, e, f);
+      tempMatrix.set(a, b, c, d, e, f);
       this.__transform__store.push(tempMatrix);
     }
 
@@ -178,7 +178,8 @@ class Layer {
       this.context.save();
 
       //set transform
-      let {a, b, c, d, e, f} = object.transform;
+      let mtx = Transform.vectorMultiply(object.motion.pos, object.transform);
+      let {a, b, c, d, e, f} = mtx;
       this.context.transform(a, b, c, d, e, f);
 
       //add hit region
@@ -186,7 +187,7 @@ class Layer {
         this.context.addHitRegion({
           path: object.path,
           id: object.id,
-          transform: object.transform //for polyfill
+          transform: mtx //for polyfill
         });
       }
 
@@ -247,6 +248,7 @@ class Layer {
       if (!this.__polyfill__regions) {
         return handler(e);
       } else {
+        console.log('polyfill')
         this.event.emit('checkHitRegion', e, handler);
       }
     }

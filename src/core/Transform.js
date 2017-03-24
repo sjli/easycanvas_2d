@@ -1,14 +1,4 @@
 //a polyfill for extending dommatrix fns to svgmatrix
-
-let cloneTransform = (origin, dist) => {
-  dist.a = origin.a;
-  dist.b = origin.b;
-  dist.c = origin.c;
-  dist.d = origin.d;
-  dist.e = origin.e;
-  dist.f = origin.f;
-}
-
 let regTransOrigin = /(rotate|scale)Self/;
 
 let polyfillTransformSelfs = () => {
@@ -26,28 +16,40 @@ let polyfillTransformSelfs = () => {
       if (this.__originChanged && /rotate|scale/.test(prop)) {
         origin.translateSelf(-this.origin[0], -this.origin[1]);
       }
-      cloneTransform(origin, this);
+      this.set(origin);
       return this;
     }
   });
 
-  //add setTransform 
-  proto.clone = function(origin) {
-    cloneTransform(origin, this);
-    return this;
+  proto.clone = function() {
+    var mtx = createMatrix();
+    return mtx.set(this);
   };
 
-  proto.setTransform = function(a, b, c, d, e, f) {
-    let args = {a, b, c, d, e, f};
-    cloneTransform(args, this);
+  proto.set = function(m, b, c, d, e, f) {
+    if (arguments.length === 1) {
+      var {a, b, c, d, e, f} = m;
+    } else {
+      var a = m;
+    }
+    this.a = a;
+    this.b = b;
+    this.c = c;
+    this.d = d;
+    this.e = e;
+    this.f = f;
     return this;
-  }
+  };
+}
+
+function createMatrix() {
+  return document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
 }
 
 class Transform {
 
   constructor() {
-    let self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+    let self = createMatrix();
 
     self.setOrigin = (x, y) => {
       self.__originChanged = true;
@@ -60,6 +62,35 @@ class Transform {
     polyfillTransformSelfs();
     return self;
 
+  }
+
+  static multiply(m1, m2) {
+    var mtx = createMatrix();
+    mtx.a = m1.a * m2.a + m1.c * m2.b;
+    mtx.b = m1.b * m2.a + m1.d * m2.b;
+    mtx.c = m1.a * m2.c + m1.c * m2.d;
+    mtx.d = m1.b * m2.c + m1.d * m2.d;
+    mtx.e = m1.a * m2.e + m1.c * m2.f;
+    mtx.f = m1.b * m2.e + m1.d * m2.f;
+    return mtx;
+  }
+
+  static multiplyVector(m, v) {
+    var mtx = createMatrix();
+    mtx.a = m.a;
+    mtx.b = m.b;
+    mtx.c = m.c;
+    mtx.d = m.d;
+    mtx.e = m.a * v.x + m.c * v.y + m.e;
+    mtx.f = m.b * v.x + m.d * v.y + m.f;
+    return mtx;
+  }
+
+  static vectorMultiply(v, m) {
+    var mtx = m.clone();
+    mtx.e = m.e + v.x;
+    mtx.f = m.f + v.y;
+    return mtx;
   }
 
 }

@@ -88,24 +88,21 @@
           });
 
           
-          zombie.pos = [400, 350];
+          zombie.pos.set(400, 350);
           zombie.flipX();
           
           zombie.scale(0.5, 0.5);
 
-          zombie.motion.setVel([
-            -5,
-            0
-          ]);
+          zombie.motion.vel.set(2.5, 0);
           
           var ani = new EC.Animation(function() {
             //zombie walk
-            if (zombie.pos[0] <= scene.width + zombie.width / 2 && zombie.pos[0] >= -zombie.width / 2) {
-              zombie.updatePos();
-            } else {
+            if (zombie.pos.x > scene.width + zombie.width / 2 || zombie.pos.x < -zombie.width / 2) {
               zombie.flipX();
-              zombie.updatePos();
+              zombie.motion.vel.x *= -1;
             }
+            zombie.updateMotion();
+
             fore.clear();
             fore.render();
           });
@@ -113,12 +110,14 @@
           zombie.action('walk');
           ani.start();
 
+
           fore.on('click', function(e) {
             id = e.region;
             if (id === zombie.id) {
               fore.objects.delete(zombie.id);
               zombie.stop();
-              bomb.transform.clone(zombie.transform);
+              bomb.transform.set(zombie.transform);
+              bomb.pos.set(zombie.pos.x, zombie.pos.y);
               bomb.action('boom');
               bomb.event.on('loopEnd', function() {
                 fore.objects.delete(bomb.id);

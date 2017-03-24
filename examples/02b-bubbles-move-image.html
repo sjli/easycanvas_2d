@@ -48,12 +48,12 @@
             })
             fore.addImage(bubble);
 
-            bubble.pos = [x, y];
+            bubble.pos.set(x, y);
 
-            bubble.motion.setVel([
+            bubble.motion.vel.set(
               Math.random()*5+.5,
               Math.random()*5+.5
-            ]);
+            );
           }
 
           function createRandomBubbles(n) {
@@ -63,7 +63,7 @@
             });
           }
 
-          createRandomBubbles(100);
+          createRandomBubbles(200);
 
           fore.render();
 
@@ -76,13 +76,13 @@
           var update = function() {
 
             fore.objects.forEach(function(image) {
-              image.updatePos();
+              image.updateMotion();
               var pos = image.pos;
-              if (pos[0] < 0 || pos[0] > scene.width) {
-                image.motion.vel[0] *= -1;
+              if (pos.x < 0 || pos.x > scene.width) {
+                image.motion.vel.x *= -1;
               }
-              if (pos[1] < 0 || pos[1] > scene.height) {
-                image.motion.vel[1] *= -1;
+              if (pos.y < 0 || pos.y > scene.height) {
+                image.motion.vel.y *= -1;
               }
             });
 

@@ -82,7 +82,7 @@
 
           fore.addImage(plane);
 
-          plane.pos = [fore.width / 2, fore.height / 2];
+          plane.pos.set(fore.width / 2, fore.height / 2);
 
           plane.scale(2, 2);
           //定义分解动作
@@ -119,9 +119,11 @@
 
           fore.addImage(rock);
 
-          rock.pos = [fore.width / 2, 100];
+          rock.pos.set(fore.width / 2, 100);
 
           rock.scale(.5, .5);
+
+          rock.motion.vel.set(0, 1);
 
           rock.defineAction({
             name: 'roll0',
@@ -159,22 +161,22 @@
               
             }
             fore.objects.forEach(function(obj) {
-              obj.updatePos();
-              if (obj.pos[1] < -20) {
+              obj.updateMotion();
+              if (obj.pos.y < -20) {
                 fore.objects.delete(obj.id);
               }
             })
             
-            var x = plane.pos[0], y = plane.pos[1];
+            var x = plane.pos.x, y = plane.pos.y;
             var vel = plane.motion.vel;
 
             if (x < 0 || x > fore.width - 64) {
-              vel[0] = 0;
+              vel.x = 0;
             }
             if (y < 0 || y > fore.height - 64) {
-              vel[1] = 0;
+              vel.y = 0;
             }
-            plane.motion.setVel([vel[0], vel[1]]);
+            plane.motion.vel.set(vel.x, vel.y);
 
             back.clear();
             back.render();
@@ -196,8 +198,8 @@
             bullet.setStyle({
               fill: 'white'
             });
-            bullet.motion.setAccel([0, -.5]);
-            bullet.pos = [plane.pos[0] + plane.width - 5, plane.pos[1]];
+            bullet.motion.accel.set(0, -.5);
+            bullet.pos.set(plane.pos.x + plane.width - 5, plane.pos.y);
             fore.addGeom(bullet);
           }
 
@@ -207,19 +209,19 @@
             }
             switch (e.key) {
               case 'w':
-                plane.motion.setVel([0, -2]);
+                plane.motion.vel.set(0, -2);
                 plane.action('swing');
                 break;
               case 'a':
-                plane.motion.setVel([-2, 0]);
+                plane.motion.vel.set(-2, 0);
                 plane.action('toLeft');
                 break;
               case 's':
-                plane.motion.setVel([0, 2]);
+                plane.motion.vel.set(0, 2);
                 plane.action('swing');
                 break;
               case 'd':
-                plane.motion.setVel([2, 0]);
+                plane.motion.vel.set(2, 0);
                 plane.action('toRight');
                 break;
               case 'k':

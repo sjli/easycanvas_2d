@@ -50,12 +50,12 @@
                 //filter: 'grayscale(' + Math.random() + ')' //filter will largely lower render performance
               }
             });
-            geom.pos = [x, y];
+            geom.pos.set(x, y);
 
-            geom.motion.setVel([
+            geom.motion.vel.set(
               Math.random()*5+.5,
               Math.random()*5+.5
-            ]);
+            );
           }
 
           function createRandomBubbles(n) {
@@ -76,13 +76,13 @@
           var update = function() {
 
             fore.objects.forEach(function(geom) {
-              geom.updatePos();
+              geom.updateMotion();
               var pos = geom.pos;
-              if (pos[0] < 0 || pos[0] > scene.width) {
-                geom.motion.vel[0] *= -1;
+              if (pos.x < 0 || pos.x > scene.width) {
+                geom.motion.vel.x *= -1;
               }
-              if (pos[1] < 0 || pos[1] > scene.height) {
-                geom.motion.vel[1] *= -1;
+              if (pos.y < 0 || pos.y > scene.height) {
+                geom.motion.vel.y *= -1;
               }
             });
 

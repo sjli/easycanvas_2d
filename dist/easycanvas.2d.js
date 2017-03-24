@@ -50,6 +50,10 @@
 
 	var _Scene2 = _interopRequireDefault(_Scene);
 
+	var _Vector = __webpack_require__(8);
+
+	var _Vector2 = _interopRequireDefault(_Vector);
+
 	var _Transform = __webpack_require__(4);
 
 	var _Transform2 = _interopRequireDefault(_Transform);
@@ -58,19 +62,19 @@
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
 
-	var _Text = __webpack_require__(12);
+	var _Text = __webpack_require__(13);
 
 	var _Text2 = _interopRequireDefault(_Text);
 
-	var _ECImage = __webpack_require__(9);
+	var _ECImage = __webpack_require__(10);
 
 	var _ECImage2 = _interopRequireDefault(_ECImage);
 
-	var _Sprite = __webpack_require__(14);
+	var _Sprite = __webpack_require__(15);
 
 	var _Sprite2 = _interopRequireDefault(_Sprite);
 
-	var _Animation = __webpack_require__(13);
+	var _Animation = __webpack_require__(14);
 
 	var _Animation2 = _interopRequireDefault(_Animation);
 
@@ -90,6 +94,8 @@
 	  ver: '1.0.0',
 
 	  Scene: _Scene2.default,
+
+	  Vector2: _Vector2.default,
 
 	  Transform: _Transform2.default,
 
@@ -118,15 +124,43 @@
 	    //load all assets
 	    var loadAssets = assets.map(function (asset, i) {
 	      return new Promise(function (resolve, reject) {
-	        var img = new Image();
-	        img.onload = function () {
-	          EasyCanvas.assets.set(asset.name, img);
-	          resolve();
+	        var request = new XMLHttpRequest();
+	        request.onloadstart = function () {
+	          container.innerHTML += 'asset ' + asset.name + ' start load...<br>';
 	        };
-	        img.onerror = function () {
+	        request.onprogress = function (e) {
+	          var percent = (e.loaded / e.total * 100).toFixed(2) + '%';
+	          var reg = new RegExp(asset.name + '[^\>]+\>');
+	          container.innerHTML = container.innerHTML.replace(reg, asset.name + ' loaded ' + percent + '<br>');
+	        };
+
+	        request.onload = function () {
+	          var options = {};
+	          var headers = request.getAllResponseHeaders();
+	          var m = headers.match(/^Content-Type\:\s*(.*?)$/mi);
+
+	          if (m && m[1]) {
+	            options.type = m[1];
+	          }
+
+	          var blob = new Blob([request.response], options);
+	          var img = document.createElement('img');
+	          img.onload = function () {
+	            EasyCanvas.assets.set(asset.name, img);
+	            resolve();
+	          };
+	          img.src = window.URL.createObjectURL(blob);
+	        };
+
+	        request.onerror = function () {
 	          reject(asset.url);
 	        };
-	        img.src = asset.url;
+
+	        request.responseType = 'arraybuffer';
+
+	        request.open('GET', asset.url, true);
+	        request.overrideMimeType('text/plain; charset=x-user-defined');
+	        request.send(null);
 	      });
 	    });
 
@@ -157,11 +191,11 @@
 
 	var _BackLayer2 = _interopRequireDefault(_BackLayer);
 
-	var _ForeLayer = __webpack_require__(10);
+	var _ForeLayer = __webpack_require__(11);
 
 	var _ForeLayer2 = _interopRequireDefault(_ForeLayer);
 
-	var _FPS = __webpack_require__(11);
+	var _FPS = __webpack_require__(12);
 
 	var _FPS2 = _interopRequireDefault(_FPS);
 
@@ -233,7 +267,7 @@
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
 
-	var _ECImage = __webpack_require__(9);
+	var _ECImage = __webpack_require__(10);
 
 	var _ECImage2 = _interopRequireDefault(_ECImage);
 
@@ -393,7 +427,7 @@
 	        }
 
 	        originSetTransform.apply(_this.context, args);
-	        matrix.setTransform.apply(_this.context.currentTransform, args);
+	        matrix.set.apply(_this.context.currentTransform, args);
 	      };
 
 	      this.context.transform = function () {
@@ -403,7 +437,7 @@
 
 	        originTransform.apply(_this.context, args);
 	        var tempMatrix = new _Transform2.default();
-	        tempMatrix.setTransform.apply(tempMatrix, args);
+	        tempMatrix.set.apply(tempMatrix, args);
 	        _this.context.currentTransform.multiply(tempMatrix);
 	      };
 
@@ -418,7 +452,7 @@
 	            e = _context$currentTrans.e,
 	            f = _context$currentTrans.f;
 
-	        tempMatrix.setTransform(a, b, c, d, e, f);
+	        tempMatrix.set(a, b, c, d, e, f);
 	        _this.__transform__store.push(tempMatrix);
 	      };
 
@@ -571,13 +605,13 @@
 	        _this4.context.save();
 
 	        //set transform
-	        var _object$transform = object.transform,
-	            a = _object$transform.a,
-	            b = _object$transform.b,
-	            c = _object$transform.c,
-	            d = _object$transform.d,
-	            e = _object$transform.e,
-	            f = _object$transform.f;
+	        var mtx = _Transform2.default.vectorMultiply(object.motion.pos, object.transform);
+	        var a = mtx.a,
+	            b = mtx.b,
+	            c = mtx.c,
+	            d = mtx.d,
+	            e = mtx.e,
+	            f = mtx.f;
 
 	        _this4.context.transform(a, b, c, d, e, f);
 
@@ -586,7 +620,7 @@
 	          _this4.context.addHitRegion({
 	            path: object.path,
 	            id: object.id,
-	            transform: object.transform //for polyfill
+	            transform: mtx //for polyfill
 	          });
 	        }
 
@@ -659,6 +693,7 @@
 	        if (!_this5.__polyfill__regions) {
 	          return handler(e);
 	        } else {
+	          console.log('polyfill');
 	          _this5.event.emit('checkHitRegion', e, handler);
 	        }
 	      };
@@ -687,19 +722,11 @@
 	  value: true
 	});
 
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	//a polyfill for extending dommatrix fns to svgmatrix
-
-	var cloneTransform = function cloneTransform(origin, dist) {
-	  dist.a = origin.a;
-	  dist.b = origin.b;
-	  dist.c = origin.c;
-	  dist.d = origin.d;
-	  dist.e = origin.e;
-	  dist.f = origin.f;
-	};
-
 	var regTransOrigin = /(rotate|scale)Self/;
 
 	var polyfillTransformSelfs = function polyfillTransformSelfs() {
@@ -721,40 +748,95 @@
 	      if (this.__originChanged && /rotate|scale/.test(prop)) {
 	        origin.translateSelf(-this.origin[0], -this.origin[1]);
 	      }
-	      cloneTransform(origin, this);
+	      this.set(origin);
 	      return this;
 	    };
 	  });
 
-	  //add setTransform 
-	  proto.clone = function (origin) {
-	    cloneTransform(origin, this);
-	    return this;
+	  proto.clone = function () {
+	    var mtx = createMatrix();
+	    return mtx.set(this);
 	  };
 
-	  proto.setTransform = function (a, b, c, d, e, f) {
-	    var args = { a: a, b: b, c: c, d: d, e: e, f: f };
-	    cloneTransform(args, this);
+	  proto.set = function (m, b, c, d, e, f) {
+	    if (arguments.length === 1) {
+	      var a = m.a,
+	          b = m.b,
+	          c = m.c,
+	          d = m.d,
+	          e = m.e,
+	          f = m.f;
+	    } else {
+	      var a = m;
+	    }
+	    this.a = a;
+	    this.b = b;
+	    this.c = c;
+	    this.d = d;
+	    this.e = e;
+	    this.f = f;
 	    return this;
 	  };
 	};
 
-	var Transform = function Transform() {
-	  _classCallCheck(this, Transform);
+	function createMatrix() {
+	  return document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+	}
 
-	  var self = document.createElementNS("http://www.w3.org/2000/svg", "svg").createSVGMatrix();
+	var Transform = function () {
+	  function Transform() {
+	    _classCallCheck(this, Transform);
 
-	  self.setOrigin = function (x, y) {
-	    self.__originChanged = true;
-	    self.origin = [x, y];
-	  };
+	    var self = createMatrix();
 
-	  //在性能测试方面svgmatrix与dommatrix没有显著的区别，更多的区别是在dommatrix多了一些封装的方法以及对于3d的支持
-	  //且2dcontext只支持svgmatrix，因此此处只扩展封装部分self方法
-	  //polyfill dommatrix methods to svgmatrix
-	  polyfillTransformSelfs();
-	  return self;
-	};
+	    self.setOrigin = function (x, y) {
+	      self.__originChanged = true;
+	      self.origin = [x, y];
+	    };
+
+	    //在性能测试方面svgmatrix与dommatrix没有显著的区别，更多的区别是在dommatrix多了一些封装的方法以及对于3d的支持
+	    //且2dcontext只支持svgmatrix，因此此处只扩展封装部分self方法
+	    //polyfill dommatrix methods to svgmatrix
+	    polyfillTransformSelfs();
+	    return self;
+	  }
+
+	  _createClass(Transform, null, [{
+	    key: "multiply",
+	    value: function multiply(m1, m2) {
+	      var mtx = createMatrix();
+	      mtx.a = m1.a * m2.a + m1.c * m2.b;
+	      mtx.b = m1.b * m2.a + m1.d * m2.b;
+	      mtx.c = m1.a * m2.c + m1.c * m2.d;
+	      mtx.d = m1.b * m2.c + m1.d * m2.d;
+	      mtx.e = m1.a * m2.e + m1.c * m2.f;
+	      mtx.f = m1.b * m2.e + m1.d * m2.f;
+	      return mtx;
+	    }
+	  }, {
+	    key: "multiplyVector",
+	    value: function multiplyVector(m, v) {
+	      var mtx = createMatrix();
+	      mtx.a = m.a;
+	      mtx.b = m.b;
+	      mtx.c = m.c;
+	      mtx.d = m.d;
+	      mtx.e = m.a * v.x + m.c * v.y + m.e;
+	      mtx.f = m.b * v.x + m.d * v.y + m.f;
+	      return mtx;
+	    }
+	  }, {
+	    key: "vectorMultiply",
+	    value: function vectorMultiply(v, m) {
+	      var mtx = m.clone();
+	      mtx.e = m.e + v.x;
+	      mtx.f = m.f + v.y;
+	      return mtx;
+	    }
+	  }]);
+
+	  return Transform;
+	}();
 
 	exports.default = Transform;
 
@@ -990,15 +1072,17 @@
 	  value: true
 	});
 
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _Vector = __webpack_require__(8);
+
+	var _Vector2 = _interopRequireDefault(_Vector);
 
 	var _Transform = __webpack_require__(4);
 
 	var _Transform2 = _interopRequireDefault(_Transform);
 
-	var _Motion = __webpack_require__(8);
+	var _Motion = __webpack_require__(9);
 
 	var _Motion2 = _interopRequireDefault(_Motion);
 
@@ -1020,14 +1104,9 @@
 	  }
 
 	  _createClass(ECObject, [{
-	    key: 'updatePos',
-	    value: function updatePos() {
+	    key: 'updateMotion',
+	    value: function updateMotion() {
 	      this.motion.update();
-	      var vel = this.motion.vel;
-	      if (vel[0] === 0 && vel[1] === 0) {
-	        return;
-	      }
-	      this.translate(vel[0], vel[1]);
 	    }
 	  }, {
 	    key: 'scale',
@@ -1079,21 +1158,7 @@
 	  }, {
 	    key: 'pos',
 	    get: function get() {
-	      return [this.transform.e, this.transform.f];
-	    },
-	    set: function set() {
-	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
-	          _ref2 = _slicedToArray(_ref, 2),
-	          x = _ref2[0],
-	          y = _ref2[1];
-
-	      var pos = this.pos;
-	      var dx = x - pos[0];
-	      var dy = y - pos[1];
-	      if (dx === 0 && dy === 0) {
-	        return;
-	      }
-	      this.translate(dx, dy);
+	      return this.motion.pos;
 	    }
 	  }]);
 
@@ -1112,9 +1177,169 @@
 	  value: true
 	});
 
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var Vector2 = function () {
+	  function Vector2() {
+	    var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+	    var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+	    _classCallCheck(this, Vector2);
+
+	    var vector = new Float32Array(2);
+
+	    vector[0] = x;
+	    vector[1] = y;
+
+	    this.__vector = vector;
+	  }
+
+	  _createClass(Vector2, [{
+	    key: "set",
+	    value: function set(x, y) {
+	      this.__vector[0] = x;
+	      this.__vector[1] = y;
+	      return this;
+	    }
+	  }, {
+	    key: "clone",
+	    value: function clone() {
+	      return new Vector2(this.x, this.y);
+	    }
+	  }, {
+	    key: "normalize",
+	    value: function normalize() {
+	      var x = this.__vector[0],
+	          y = this.__vector[1];
+	      var len = this.len;
+	      var nx, ny;
+
+	      if (len === 0) {
+	        nx = 0;
+	        ny = 0;
+	      } else {
+	        nx = x / len;
+	        ny = y / len;
+	      }
+
+	      return new Vector2(nx, ny);
+	    }
+	  }, {
+	    key: "direct",
+	    value: function direct() {
+	      var x = this.__vector[0],
+	          y = this.__vector[1];
+	      var dx = 0,
+	          dy = 0;
+	      if (x) {
+	        dx = x / Math.abs(x); //0, 1, -1
+	      }
+	      if (y) {
+	        dy = y / Math.abs(y);
+	      }
+	      return new Vector2(dx, dy);
+	    }
+	  }, {
+	    key: "add",
+	    value: function add(v) {
+	      this.set(this.x + v.x, this.y + v.y);
+	      return this;
+	    }
+	  }, {
+	    key: "minus",
+	    value: function minus(v) {
+	      this.set(this.x - v.x, this.y - v.y);
+	      return this;
+	    }
+	  }, {
+	    key: "x",
+	    get: function get() {
+	      return this.__vector[0];
+	    },
+	    set: function set(val) {
+	      this.__vector[0] = val;
+	      return val;
+	    }
+	  }, {
+	    key: "y",
+	    get: function get() {
+	      return this.__vector[1];
+	    },
+	    set: function set(val) {
+	      this.__vector[1] = val;
+	      return val;
+	    }
+	  }, {
+	    key: "len",
+	    get: function get() {
+	      var x = this.__vector[0],
+	          y = this.__vector[1];
+	      return Math.sqrt(x * x + y * y);
+	    }
+	  }], [{
+	    key: "add",
+	    value: function add(v1, v2) {
+	      return v1.clone().add(v2);
+	    }
+	  }, {
+	    key: "minus",
+	    value: function minus(v1, v2) {
+	      return v1.clone().minus(v2);
+	    }
+	  }, {
+	    key: "len",
+	    value: function len(v1, v2) {
+	      var x = v1.x - v2.x;
+	      var y = v1.y - v2.y;
+	      return Math.sqrt(x * x + y * y);
+	    }
+	  }, {
+	    key: "dot",
+	    value: function dot(v1, v2) {
+	      return v1.x * v2.x + v1.y * v2.y;
+	    }
+	  }, {
+	    key: "shadow",
+	    value: function shadow(v1, v2) {
+	      return Vector2.dot(v1, v2) / v2.len;
+	    }
+	  }, {
+	    key: "proj",
+	    value: function proj(v1, v2) {
+	      var pro = Vector2.dot(v1, v2) / v2.len / v2.len;
+	      return new Vector2(pro * v2.x, pro * v2.y);
+	    }
+	  }, {
+	    key: "perp",
+	    value: function perp(v1, v2) {
+	      return Vector2.minus(v1, Vector2.proj(v1, v2));
+	    }
+	  }]);
+
+	  return Vector2;
+	}();
+
+	exports.default = Vector2;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _Vector = __webpack_require__(8);
+
+	var _Vector2 = _interopRequireDefault(_Vector);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1122,44 +1347,19 @@
 	  function Motion() {
 	    _classCallCheck(this, Motion);
 
-	    var _motion = new Float32Array(6);
-	    this.pos = new Float32Array(_motion.buffer, 0, 2);
-	    this.vel = new Float32Array(_motion.buffer, 8, 2);
-	    this.accel = new Float32Array(_motion.buffer, 16, 2);
+	    this.pos = new _Vector2.default(); //local position of object
+	    this.vel = new _Vector2.default(); //current velocity
+	    this.accel = new _Vector2.default(); //current acceleration
 	  }
 
+	  //update velocity per frame
+
+
 	  _createClass(Motion, [{
-	    key: "setVel",
-	    value: function setVel() {
-	      var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
-	          _ref2 = _slicedToArray(_ref, 2),
-	          x = _ref2[0],
-	          y = _ref2[1];
-
-	      this.vel[0] = x;
-	      this.vel[1] = y;
-	    }
-	  }, {
-	    key: "setAccel",
-	    value: function setAccel() {
-	      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [0, 0],
-	          _ref4 = _slicedToArray(_ref3, 2),
-	          x = _ref4[0],
-	          y = _ref4[1];
-
-	      this.accel[0] = x;
-	      this.accel[1] = y;
-	    }
-
-	    //update velocity per frame
-
-	  }, {
-	    key: "update",
+	    key: 'update',
 	    value: function update() {
-	      this.vel[0] += this.accel[0];
-	      this.vel[1] += this.accel[1];
-	      this.pos[0] += this.vel[0];
-	      this.pos[1] += this.vel[1];
+	      this.vel.add(this.accel);
+	      this.pos.add(this.vel);
 	    }
 	  }]);
 
@@ -1169,7 +1369,7 @@
 	exports.default = Motion;
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1256,7 +1456,7 @@
 	exports.default = ECImage;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1292,7 +1492,7 @@
 	exports.default = ForeLayer;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1307,7 +1507,7 @@
 
 	var _Geometry2 = _interopRequireDefault(_Geometry);
 
-	var _Text = __webpack_require__(12);
+	var _Text = __webpack_require__(13);
 
 	var _Text2 = _interopRequireDefault(_Text);
 
@@ -1315,7 +1515,7 @@
 
 	var _Layer3 = _interopRequireDefault(_Layer2);
 
-	var _Animation = __webpack_require__(13);
+	var _Animation = __webpack_require__(14);
 
 	var _Animation2 = _interopRequireDefault(_Animation);
 
@@ -1428,7 +1628,7 @@
 	exports.default = FPS;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1562,7 +1762,7 @@
 	exports.default = Text;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1659,7 +1859,7 @@
 	exports.default = Animation;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1670,11 +1870,11 @@
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _ECImage2 = __webpack_require__(9);
+	var _ECImage2 = __webpack_require__(10);
 
 	var _ECImage3 = _interopRequireDefault(_ECImage2);
 
-	var _Animation = __webpack_require__(13);
+	var _Animation = __webpack_require__(14);
 
 	var _Animation2 = _interopRequireDefault(_Animation);
 
@@ -1745,6 +1945,8 @@
 	    _this._img = img;
 	    _this.sw = _this.dw = _this.width;
 	    _this.sh = _this.dh = _this.height;
+	    _this.path = new Path2D();
+	    _this.path.rect(0, 0, _this.width, _this.height);
 
 	    //set transform origin center
 	    _this.transformOrigin(_this.width / 2, _this.height / 2);

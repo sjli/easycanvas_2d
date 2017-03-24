@@ -1,3 +1,4 @@
+import Vector2 from '../core/Vector2'
 import Transform from '../core/Transform'
 import Motion from '../core/Motion'
 import Event from '../core/Event'
@@ -11,22 +12,11 @@ class ECObject {
   }
 
   get pos() {
-    return [this.transform.e, this.transform.f];
+    return this.motion.pos;
   }
 
-  set pos([x, y] = [0, 0]) {
-    let pos = this.pos;
-    let dx = x - pos[0];
-    let dy = y - pos[1];
-    if (dx === 0 && dy === 0) {return;}
-    this.translate(dx, dy);
-  }
-
-  updatePos() {
+  updateMotion() {
     this.motion.update();
-    let vel = this.motion.vel;
-    if (vel[0] ===0 && vel[1] === 0) {return;}
-    this.translate(vel[0], vel[1]);
   }
 
   scale(...args) {

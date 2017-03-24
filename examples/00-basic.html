@@ -54,12 +54,6 @@
           back.addGeom(g3);
 
           //定义路径
-         /* axis.path.moveTo(-fore.coords.x, 0);
-          axis.path.lineTo(0, 0);
-          axis.path.lineTo(0, fore.canvas.height - fore.coords.y);
-          axis.path.moveTo(0, -fore.coords.y);
-          axis.path.lineTo(0, 0);
-          axis.path.lineTo(fore.canvas.width - fore.coords.x, 0);*/
           function drawAxis() {
             axis.path = new Path2D; //用于用户拖拽时更新path
             axis.path.rect(-fore.coords.x, 0, fore.canvas.width, 0.5);
@@ -74,8 +68,9 @@
           drawAxis();
 
           //定义位置
-          g1.pos = [100, 100];
-          g2.pos = [200, 200];
+          g1.pos.set(100, 100);
+          console.log(g1.motion.pos.x, g1.motion.pos.y);
+          g2.pos.set(200, 200);
 
           //定义渐变
           var gradient = fore.context.createRadialGradient(-20, -20, 0, 0, 0, 50);
@@ -96,7 +91,7 @@
             fill: gradient
           });
 
-          g1.motion.setVel([1,0])
+          g1.motion.vel.set(1, 0);
 
           g2.setStyle({
             fill: pattern1
@@ -107,7 +102,9 @@
           });
 
           //定义变换
+          console.log(g1.transform);
           g1.scale(.5, .5);
+          console.log(g1.transform);
           g2.transform.setOrigin(50, 50);
           var rotateDeg = 1;
 

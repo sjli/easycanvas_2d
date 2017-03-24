@@ -42,6 +42,8 @@ class Sprite extends ECImage {
     this._img = img;
     this.sw = this.dw = this.width;
     this.sh = this.dh = this.height;
+    this.path = new Path2D;
+    this.path.rect(0, 0, this.width, this.height);
 
     //set transform origin center
     this.transformOrigin(this.width / 2, this.height / 2);
